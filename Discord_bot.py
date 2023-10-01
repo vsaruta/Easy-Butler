@@ -161,6 +161,9 @@ def run_discord_bot():
             raise e
             await client.close()
 
+        # end message to console
+        print("Ending program.")
+        
         # End run
         await client.close()
 
