@@ -6,6 +6,7 @@ import sys
 import csv
 import secret
 
+# Customization :)
 CSV_FILE = "fall_2023_cs126_names.csv"
 LOG_FILE = "discord_log.txt"
 STUDENT_ROLE = "Students"
@@ -14,9 +15,11 @@ END_MESSGAE = "Finished"
 WELCOME_CHANNEL_NAME = "welcome"
 BOT_CHANNEL_NAME = "bot_log"
 NEUTRAL_COLOR = 0x4895FF # hex
+CAUTION_COLOR = 0xFFF253 # hex
 SUCCESS_COLOR = 0x21D375 # hex
-ERROR_COLOR   = 0xED2939 # hex
-WAIT_FOR_RATE_LIMIT = 0.5 # in seconds
+ERROR_COLOR   = 0xF95C52 # hex
+WAIT_FOR_RATE_LIMIT = 0.05 # in seconds
+BOT_REACTION = '👍'
 
 def run_discord_bot():
 
@@ -26,12 +29,14 @@ def run_discord_bot():
     intents.message_content = True
 
     # Create the bot client, with a prefix of .
+        # irrelegant in butler bot
     client = commands.Bot(command_prefix='.', intents=intents)
 
     @client.event
     async def on_ready():
 
         # get welcome channel
+            # This could also be done with the channel ID
         welcome_channel = discord.utils.get(client.get_all_channels(),
                                             name=WELCOME_CHANNEL_NAME)
 
@@ -43,17 +48,19 @@ def run_discord_bot():
         guest_list = get_guest_list(CSV_FILE)
 
         # send to log channel that processing has started
-        embed = embed_start_end_bot(START_MESSAGE)
+        embed = embed_start_end_bot(START_MESSAGE, welcome_channel)
         await bot_log_channel.send(embed=embed)
 
         # initialize count for users added
         users_added = 0
 
+        print(f"Scanning messages in #{WELCOME_CHANNEL_NAME}")
+
         try:
             # Fetch all messages in the welcome channel
             async for message in welcome_channel.history(limit=None):
 
-                # Skip messages sent by bot or admins
+                # Skip messages sent by bot
                 if (message.author != client.user):
 
                     # grab nick_name and user objects
@@ -69,19 +76,41 @@ def run_discord_bot():
                             # format nickname nicely
                             nick_name = format_nick_name(nick_name)
 
-                            # assign nick_name to user
-                            await user.edit(nick=nick_name)
+                            try:
+                                # assign nick_name to user
+                                await user.edit(nick=nick_name)
+                                print(f"Assigned {nick_name} to " +
+                                                        f"{user.name}")
+
+                            except Exception as e:
+                                print("Unable to assign nick name to " +
+                                                        f"{user.name}")
+                                raise e
+                                break
 
                             # grab student role
                                 #role_id = 1062778282640166973
                             role = discord.utils.get(message.guild.roles,
                                                         name=STUDENT_ROLE)
 
-                            # Add role to user
-                            await user.add_roles(role)
+                            try:
+                                # Add role to user
+                                await user.add_roles(role)
+                                print(f"Assigned {STUDENT_ROLE} role to " +
+                                                       f"{user.name}")
+
+                            except Exception as e:
+                                print("Unable to assign role to " +
+                                                       f"{user.name}")
+                                raise e
+                                break
 
                             # create success embed
-                            embed = embed_successful_assign(nick_name, user)
+                            embed = embed_successful_assign(nick_name, user,
+                                                                         role)
+
+                            # add BOT_REACTION to message
+                            await message.add_reaction(BOT_REACTION)
 
                             # send success embed to bot channel
                             await bot_log_channel.send(embed=embed)
@@ -104,14 +133,17 @@ def run_discord_bot():
                             embed = embed_unsuccessful_assign(nick_name, user)
                             await bot_log_channel.send(embed=embed)
 
+                            # delete seen message for ease's sake
+                                # bot will work without this, but this
+                                # declutters the channel a little
+                            await message.delete()
+
+                # wait for wait limit, if thats an issue.
                 time.sleep(WAIT_FOR_RATE_LIMIT)
-                # delete seen message for ease's sake
-                    # bot will work without this, but this declutters the
-                    # channel a little
-                #await message.delete()
 
             # Print a log message once all the messages have been processed
-            embed = embed_start_end_bot(END_MESSGAE, users_added)
+            embed = embed_start_end_bot(END_MESSGAE, welcome_channel,
+                                                                    users_added)
             await bot_log_channel.send(embed=embed)
 
         # end bot operations by terminal and send a message
@@ -135,12 +167,13 @@ def run_discord_bot():
     # run client
     client.run(secret.TOKEN)
 
+# embed for unexpected end
 def embed_abrupt_end(type, users_added):
 
     now = datetime.now()
 
     embed = discord.Embed(title=f"{type}: Bot Stopped Unexpectedly.",
-                    color = NEUTRAL_COLOR)
+                    color = CAUTION_COLOR)
 
     embed.add_field(name=f"Students added in batch: {users_added}",
                     value = "",
@@ -150,6 +183,7 @@ def embed_abrupt_end(type, users_added):
 
     return embed
 
+# embed for unsuccessful assigning of type
 def embed_client_error(user, type):
 
     embed = discord.Embed(title=f"Unable to add {type} to {user.name}",
@@ -159,11 +193,14 @@ def embed_client_error(user, type):
 
     return embed
 
-def embed_start_end_bot(state, users_added = 0):
+# embed for signaling the start/end of the bot
+def embed_start_end_bot(state, channel, users_added = 0):
 
     now = datetime.now()
+    channel_mention = f'<#{channel.id}>'
 
     embed = discord.Embed(title=f"{state} processing chat log.",
+                        description=f"{channel_mention}",
                         color = NEUTRAL_COLOR)
 
     embed.set_footer(text=f"{now}")
@@ -175,11 +212,13 @@ def embed_start_end_bot(state, users_added = 0):
                         inline=False)
     return embed
 
-def embed_successful_assign(name, user):
+# embed for successful assigning of name and role
+def embed_successful_assign(name, user, role):
 
     now = datetime.now()
     user_display = user.name
     user_id = user.id
+    role_mention = role.mention
 
     embed = discord.Embed(title=f"Added New Student",
                     color = SUCCESS_COLOR)
@@ -196,10 +235,17 @@ def embed_successful_assign(name, user):
                     value=f"{user_id}",
                     inline=False)
 
+    embed.add_field(name="Role",
+                    value=f"{role_mention}",
+                    inline=False)
+
     embed.set_footer(text=f"{now}")
 
     return embed
 
+# embed for unsuccessful assign of role
+    # triggers when attempted name is not in guest_list
+    # - for use in bot log channel
 def embed_unsuccessful_assign(name, user):
         now = datetime.now()
         user_display = user.name
@@ -224,6 +270,10 @@ def embed_unsuccessful_assign(name, user):
 
         return embed
 
+# embed for unsuccessful assign of role
+    # triggers when attempted name is not in guest_list
+    # and notifies the user
+    # - for use in welcome channel
 def embed_user_error(nick_name):
 
     now = datetime.now()
@@ -241,6 +291,7 @@ def embed_user_error(nick_name):
 
     return embed
 
+# formats discord message to prettier nick name
 def format_nick_name(nick_name):
 
     # split the name on spaces
@@ -255,8 +306,9 @@ def format_nick_name(nick_name):
         formatted_nick += f"{temp_list[index][0].upper()}"
         formatted_nick += f"{temp_list[index][1:]} "
 
-    return formatted_nick
+    return formatted_nick[:-1] # cuts off end space. fencepost problem!
 
+# grabs guest list from filename for nick names to be compared to
 def get_guest_list(filename):
 
     # Read guest list from CSV file and convert names to lowercase
@@ -266,7 +318,7 @@ def get_guest_list(filename):
 
     return guest_list
 
-
+# logs new student to file
 def log_to_file(filename, name, user):
 
     now = datetime.now()
