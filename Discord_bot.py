@@ -14,7 +14,7 @@ WELCOME_CHANNEL_NAME = "welcome"
 BOT_CHANNEL_NAME = "bot_log"
 NEUTRAL_COLOR = 0x4895FF
 SUCCESS_COLOR = 0x21D375
-ERROR_COLOR   = 0xb30000
+ERROR_COLOR   = 0xED2939
 WAIT_FOR_RATE_LIMIT = 0
 
 def run_discord_bot():
@@ -100,6 +100,9 @@ def run_discord_bot():
                             await message.channel.send(message.author.mention,
                                                         embed=embed)
 
+                            embed = embed_unsuccessful_assign(nick_name, user)
+                            await bot_log_channel.send(embed=embed)
+
                 time.sleep(WAIT_FOR_RATE_LIMIT)
                 # delete seen message for ease's sake
                     # bot will work without this, but this declutters the
@@ -175,6 +178,30 @@ def embed_successful_assign(name, user):
 
     return embed
 
+def embed_unsuccessful_assign(name, user):
+        now = datetime.now()
+        user_display = user.name
+        user_id = user.id
+
+        embed = discord.Embed(title=f"Unable to Add New Student",
+                        color = ERROR_COLOR)
+
+        embed.add_field(name=f"Attempted Name",
+                        value=f"{name}",
+                        inline=False)
+
+        embed.add_field(name=f"Discord Name",
+                        value=f"{user_display}",
+                        inline=False)
+
+        embed.add_field(name=f"Discord ID",
+                        value=f"{user_id}",
+                        inline=False)
+
+        embed.set_footer(text=f"{now}")
+
+        return embed
+
 def embed_user_error(nick_name):
 
     now = datetime.now()
@@ -187,7 +214,8 @@ def embed_user_error(nick_name):
                     "exactly as it is in canvas.",
                     inline=False)
 
-    embed.set_footer(text=f"{now}")
+    embed.set_footer(text=f"{now} - " +
+        "If you believe this was a mistake, please inform an admin.")
 
     return embed
 
