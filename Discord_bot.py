@@ -2,6 +2,7 @@ from discord.ext import commands
 from datetime import datetime
 import discord
 import time
+import sys
 import csv
 import secret
 
@@ -12,10 +13,10 @@ START_MESSAGE = "Started"
 END_MESSGAE = "Finished"
 WELCOME_CHANNEL_NAME = "welcome"
 BOT_CHANNEL_NAME = "bot_log"
-NEUTRAL_COLOR = 0x4895FF
-SUCCESS_COLOR = 0x21D375
-ERROR_COLOR   = 0xED2939
-WAIT_FOR_RATE_LIMIT = 0
+NEUTRAL_COLOR = 0x4895FF # hex
+SUCCESS_COLOR = 0x21D375 # hex
+ERROR_COLOR   = 0xED2939 # hex
+WAIT_FOR_RATE_LIMIT = 0.5 # in seconds
 
 def run_discord_bot():
 
@@ -113,20 +114,41 @@ def run_discord_bot():
             embed = embed_start_end_bot(END_MESSGAE, users_added)
             await bot_log_channel.send(embed=embed)
 
+        # end bot operations by terminal and send a message
+        except KeyboardInterrupt as e:
 
-        # raise exception if anything goes awry
-        except Exception as e:
-            raise e
-
-            # DOES NOT WORK?
-            embed = embed_start_end_bot(END_MESSGAE)
+            embed = embed_abrupt_end("KeyboardInterrupt", users_added)
             await bot_log_channel.send(embed=embed)
+            await client.close()
+
+        # raise exception if anything else goes awry
+        except Exception as e:
+
+            embed = embed_abrupt_end("Error", users_added)
+            await bot_log_channel.send(embed=embed)
+            raise e
+            await client.close()
 
         # End run
         await client.close()
 
     # run client
     client.run(secret.TOKEN)
+
+def embed_abrupt_end(type, users_added):
+
+    now = datetime.now()
+
+    embed = discord.Embed(title=f"{type}: Bot Stopped Unexpectedly.",
+                    color = NEUTRAL_COLOR)
+
+    embed.add_field(name=f"Students added in batch: {users_added}",
+                    value = "",
+                    inline=False)
+
+    embed.set_footer(text=f"{now}")
+
+    return embed
 
 def embed_client_error(user, type):
 
@@ -146,7 +168,7 @@ def embed_start_end_bot(state, users_added = 0):
 
     embed.set_footer(text=f"{now}")
 
-    if state == END_MESSGAE:
+    if (state == END_MESSGAE):
 
         embed.add_field(name=f"Students added in batch: {users_added}",
                         value = "",
