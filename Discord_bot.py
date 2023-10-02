@@ -8,7 +8,6 @@ import secret
 
 # Customization :)
 CSV_FILE = "fall_2023_cs126_names.csv"
-CURRENT_SEMESTER = "Fall 2023"
 LOG_FILE = "discord_log.txt"
 STUDENT_ROLE = "Students"
 START_MESSAGE = "Started"
@@ -30,18 +29,19 @@ def run_discord_bot():
     intents.message_content = True
 
     # Create the bot client, with a prefix of .
-        # irrelegant in butler bot
+        # irrelevant in butler bot
     client = commands.Bot(command_prefix='.', intents=intents)
 
     @client.event
     async def on_ready():
 
+        # check if bot is in any guilds
         await close_if_no_guilds(client)
 
+        # assume yes, iterate through guilds
         for guild in client.guilds:
 
             # get welcome channel
-                # This could also be done with the channel ID
             welcome_channel = discord.utils.get(guild.channels,
                                                 name=WELCOME_CHANNEL_NAME)
 
@@ -52,10 +52,13 @@ def run_discord_bot():
             # initialize count for users added
             users_added = 0
 
+            # print to console
             print(f"\nProcessing '{guild.name}'")
 
+            current_semester = get_current_semester_string()
+
             # Leave old semester servers
-            if CURRENT_SEMESTER not in guild.name:
+            if current_semester not in guild.name.lower():
 
                 # print to console
                 print(f"\tLeaving '{guild.name}' - Old Semester")
@@ -68,25 +71,28 @@ def run_discord_bot():
                 # leave the server
                 await guild.leave()
 
+                # check if in any other server
                 await close_if_no_guilds(client)
 
-            # check if both welcome and bot log channel
+            # Assume guild is named correctly
             else:
+                # Check if guild is set up correctly
                 if not guild_correctly_set_up(guild):
 
+                    # error message
                     print(f"\t'{guild.name}' Set up incorrectly.")
                     print(f"\tPlease check if {guild.name} has both")
                     print(f"\t#{WELCOME_CHANNEL_NAME} and #{BOT_CHANNEL_NAME}")
                     print(f"\tEnd search for '{guild.name}'\n")
 
-                # guild is set up correctly
+                # guild is set up correctly, begin looking at messages
                 else:
-                    # get guest list
-                    guest_list = get_guest_list(CSV_FILE)
-
                     # send to log channel that processing has started
                     embed = embed_start_end_bot(START_MESSAGE, welcome_channel)
                     await bot_log_channel.send(embed=embed)
+
+                    # get guest list
+                    guest_list = get_guest_list(CSV_FILE)
 
                     print(f"\tScanning messages in #{WELCOME_CHANNEL_NAME}")
 
@@ -110,9 +116,10 @@ def run_discord_bot():
                             await bot_log_channel.send(embed=embed)
                             await client.close()
 
-                        except:
+                        except Exception as e:
                             embed = embed_abrupt_end("Error",
-                                                                users_added)
+                                                                users_added,
+                                                                str(e))
                             await bot_log_channel.send(embed=embed)
                             await client.close()
 
@@ -230,8 +237,10 @@ async def handle_message(message, client, guest_list, bot_log_channel):
                 # create success embed
                 if (attempt1) and (attempt2):
 
-                    users_added += 1
+                    # increase users addeed by 1
+                    users_added = 1
 
+                    # send success message
                     embed = embed_successful_assign(nick_name,
                                                         user,
                                                         role)
@@ -245,20 +254,19 @@ async def handle_message(message, client, guest_list, bot_log_channel):
                     # log to file
                     log_to_file(LOG_FILE, nick_name, user)
 
-                    # increase users added count
-
             # nick_name is not in student file
             else:
                 # create error embed
                 embed = embed_user_error(nick_name)
 
-                # send error embed
+                # send error embed for user to see
                 await message.channel.send(message.author.mention,
                                             embed=embed)
 
+                # create error embed
                 embed = embed_unsuccessful_assign(user,
                                                 name=nick_name)
-
+                # send error embed for log keeping
                 await bot_log_channel.send(embed=embed)
 
                 # delete seen message for ease's sake
@@ -269,7 +277,7 @@ async def handle_message(message, client, guest_list, bot_log_channel):
     return users_added
 
 # embed for unexpected end
-def embed_abrupt_end(type, users_added):
+def embed_abrupt_end(type, users_added, e =""):
 
     now = datetime.now()
 
@@ -279,6 +287,8 @@ def embed_abrupt_end(type, users_added):
     embed.add_field(name=f"Students added in batch: {users_added}",
                     value = "",
                     inline=False)
+    embed.add_field(name = "Context",
+                    value = f"{e[-500:]}")
 
     embed.set_footer(text=f"{now}")
 
@@ -302,7 +312,7 @@ def embed_leave_message():
 
     embed = discord.Embed(title=f"Left Server - Old Semester",
                     description=f"Leaving all servers without " +
-                                f"{CURRENT_SEMESTER} in its name.",
+                                f"{current_semester} in its name.",
                     color = NEUTRAL_COLOR)
 
     embed.set_footer(text=f"{now}")
@@ -336,6 +346,8 @@ def embed_successful_assign(name, user, role):
     user_display = user.name
     user_id = user.id
     role_mention = role.mention
+    user_pfp = user.avatar
+    #thumbnail_url = user_pfp.with_size(64, 64)
 
     embed = discord.Embed(title=f"Added New Student",
                     color = SUCCESS_COLOR)
@@ -355,6 +367,8 @@ def embed_successful_assign(name, user, role):
     embed.add_field(name="Role",
                     value=f"{role_mention}",
                     inline=False)
+
+    embed.set_thumbnail(url=user_pfp)
 
     embed.set_footer(text=f"{now}")
 
@@ -431,6 +445,64 @@ def format_nick_name(nick_name):
         formatted_nick += f"{temp_list[index][1:]} "
 
     return formatted_nick[:-1] # cuts off end space. fencepost problem!
+
+def get_current_semester_string():
+
+    # Get the current date
+    current_date = datetime.now()
+
+    # dates for sping semester
+    sp_month_start = 1
+    sp_day_start   = 13
+    sp_month_end   = 5
+    sp_day_end     = 3
+
+    # dates for summer semester
+    su_month_start = 5
+    su_day_start   = 4
+    su_month_end   = 7
+    su_day_end     = 31
+
+    # dates for fall semester
+    f_month_start  = 8
+    f_day_start    = 1
+    f_month_end    = 12
+    f_day_end      = 27
+
+    # dates for spring semester
+    w_month_start  = 12
+    w_day_start    = 28
+    w_month_end    = 1
+    w_day_end      = 12
+
+    # Define the season ranges
+    seasons = [
+        ('spring',  (datetime(current_date.year, sp_month_start, sp_day_start),
+                     datetime(current_date.year, sp_month_end,   sp_day_end))),
+
+        ('summer',  (datetime(current_date.year, su_month_start, su_day_start),
+                     datetime(current_date.year, su_month_end,   su_day_end))),
+
+        ('fall',    (datetime(current_date.year, f_month_start, f_day_start),
+                     datetime(current_date.year, f_month_end,   f_day_end))),
+
+        ('winter',  (datetime(current_date.year, w_month_start, w_day_start),
+                     datetime(current_date.year + 1, w_month_end, w_day_end)))
+    ]
+
+    for season, (start_date, end_date) in seasons:
+
+        if start_date <= current_date <= end_date:
+
+            current_season = season
+
+            break
+
+    # Create the desired string
+    season_year_str = f"{current_season} {current_date.year}"
+
+    return season_year_str
+
 
 # grabs guest list from filename for nick names to be compared to
 def get_guest_list(filename):
