@@ -19,7 +19,7 @@ NEUTRAL_COLOR = 0x4895FF # hex
 CAUTION_COLOR = 0xFFF253 # hex
 SUCCESS_COLOR = 0x21D375 # hex
 ERROR_COLOR   = 0xF95C52 # hex
-WAIT_FOR_RATE_LIMIT = 0.05 # in seconds
+WAIT_FOR_RATE_LIMIT = 0.2 # in seconds
 BOT_REACTION = '👍'
 
 def run_discord_bot():
@@ -36,174 +36,147 @@ def run_discord_bot():
     @client.event
     async def on_ready():
 
+        await close_if_no_guilds(client)
 
-        # get welcome channel
-            # This could also be done with the channel ID
-        welcome_channel = discord.utils.get(client.get_all_channels(),
-                                            name=WELCOME_CHANNEL_NAME)
-
-        # get log channel
-        bot_log_channel = discord.utils.get(client.get_all_channels(),
-                                            name=BOT_CHANNEL_NAME)
-        # check if bot is not in any servers
-        if len(client.guilds) == 0:
-            print("Error: Bot is in no servers.")
-            await client.close()
-
-         # Iterate through the bot's joined servers (guilds)
         for guild in client.guilds:
 
+            # get welcome channel
+                # This could also be done with the channel ID
+            welcome_channel = discord.utils.get(guild.channels,
+                                                name=WELCOME_CHANNEL_NAME)
+
+            # get log channel
+            bot_log_channel = discord.utils.get(guild.channels,
+                                                name=BOT_CHANNEL_NAME)
+
+            # initialize count for users added
+            users_added = 0
+
+            print(f"\nProcessing '{guild.name}'")
+
+            # Leave old semester servers
             if CURRENT_SEMESTER not in guild.name:
 
-                print(f"Leaving {guild.name} - Old Semester")
+                # print to console
+                print(f"\tLeaving '{guild.name}' - Old Semester")
 
                 # Send embed only if set up correctly
                 if guild_correctly_set_up(guild):
                     embed = embed_leave_message()
                     await bot_log_channel.send(embed=embed)
 
-                await guild.leave() # leave the server
+                # leave the server
+                await guild.leave()
 
-                if len(client.guilds) == 0:
-                    print("Bot is in no servers.")
-                    await client.close()
-                break
+                await close_if_no_guilds(client)
 
             # check if both welcome and bot log channel
-            if not guild_correctly_set_up(guild):
+            else:
+                if not guild_correctly_set_up(guild):
 
-                print(f"{guild.name} Set up incorrectly.")
-                print(f"\tPlease checK if {guild.name} has both")
-                print(f"\t#{WELCOME_CHANNEL_NAME} and #{BOT_CHANNEL_NAME}")
+                    print(f"\t'{guild.name}' Set up incorrectly.")
+                    print(f"\tPlease check if {guild.name} has both")
+                    print(f"\t#{WELCOME_CHANNEL_NAME} and #{BOT_CHANNEL_NAME}")
+                    print(f"\tEnd search for '{guild.name}'\n")
 
-                break
+                # guild is set up correctly
+                else:
+                    # get guest list
+                    guest_list = get_guest_list(CSV_FILE)
 
-            # get guest list
-            guest_list = get_guest_list(CSV_FILE)
+                    # send to log channel that processing has started
+                    embed = embed_start_end_bot(START_MESSAGE, welcome_channel)
+                    await bot_log_channel.send(embed=embed)
 
-            # send to log channel that processing has started
-            embed = embed_start_end_bot(START_MESSAGE, welcome_channel)
-            await bot_log_channel.send(embed=embed)
+                    print(f"\tScanning messages in #{WELCOME_CHANNEL_NAME}")
 
-            # initialize count for users added
-            users_added = 0
+                    # Fetch all messages in the welcome channel
+                    async for message in welcome_channel.history(limit=None):
 
-            print(f"Scanning messages in #{WELCOME_CHANNEL_NAME}")
+                        try:
+                            # Handle the messages, return the users added
+                            users_added += await handle_message(message, client,
+                                                                guest_list,
+                                                                bot_log_channel)
 
-            try:
-                # Fetch all messages in the welcome channel
-                async for message in welcome_channel.history(limit=None):
+                            # wait for wait limit, if thats an issue.
+                            time.sleep(WAIT_FOR_RATE_LIMIT)
 
-                    # Skip messages sent by bot
-                    if (message.author != client.user):
-
-                        # grab nick_name and user objects
-                        nick_name = message.content.lower()
-                        user = message.author
-
-                        # Check if user doesn't have role
-                        if (len(user.roles) == 1):
-
-                            # check if user is in CSV
-                            if nick_name in guest_list:
-
-                                # format nickname nicely
-                                nick_name = format_nick_name(nick_name)
-
-                                try:
-                                    # assign nick_name to user
-                                    await user.edit(nick=nick_name)
-                                    print(f"Assigned {nick_name} to " +
-                                                            f"{user.name}")
-
-                                except Exception as e:
-                                    print("Unable to assign nick name to " +
-                                                            f"{user.name}")
-                                    raise e
-                                    break
-
-                                # grab student role
-                                    #role_id = 1062778282640166973
-                                role = discord.utils.get(message.guild.roles,
-                                                            name=STUDENT_ROLE)
-
-                                try:
-                                    # Add role to user
-                                    await user.add_roles(role)
-                                    print(f"Assigned {STUDENT_ROLE} role to " +
-                                                           f"{user.name}")
-
-                                except Exception as e:
-                                    print("Unable to assign role to " +
-                                                           f"{user.name}")
-                                    raise e
-                                    break
-
-                                # create success embed
-                                embed = embed_successful_assign(nick_name,
-                                                                user,
-                                                                role)
-
-                                # add BOT_REACTION to message
-                                await message.add_reaction(BOT_REACTION)
-
-                                # send success embed to bot channel
-                                await bot_log_channel.send(embed=embed)
-
-                                # log to file
-                                log_to_file(LOG_FILE, nick_name, user)
-
-                                # increase users added count
-                                users_added += 1
-
-                            # nick_name is not in student file
-                            else:
-                                # create error embed
-                                embed = embed_user_error(nick_name)
-
-                                # send error embed
-                                await message.channel.send(message.author.mention,
-                                                            embed=embed)
-
-                                embed = embed_unsuccessful_assign(nick_name,
-                                                                       user)
-                                await bot_log_channel.send(embed=embed)
-
-                                # delete seen message for ease's sake
-                                    # bot will work without this, but this
-                                    # declutters the channel a little
-                                await message.delete()
-
-                    # wait for wait limit, if thats an issue.
-                    time.sleep(WAIT_FOR_RATE_LIMIT)
-
-                # Print a log message once all the messages have been processed
-                embed = embed_start_end_bot(END_MESSGAE, welcome_channel,
+                        # raise exception if anything else goes awry
+                        except KeyboardInterrupt as e:
+                            print(f"\tEnd search for '{guild.name}'\n")
+                            embed = embed_abrupt_end("KeyboardInterrupt",
                                                                 users_added)
-                await bot_log_channel.send(embed=embed)
+                            await bot_log_channel.send(embed=embed)
+                            await client.close()
 
-            # end bot operations by terminal and send a message
-            except KeyboardInterrupt as e:
+                        except:
+                            embed = embed_abrupt_end("Error",
+                                                                users_added)
+                            await bot_log_channel.send(embed=embed)
+                            await client.close()
 
-                embed = embed_abrupt_end("KeyboardInterrupt", users_added)
-                await bot_log_channel.send(embed=embed)
 
-            # raise exception if anything else goes awry
-            except Exception as e:
+                    # Print a log message once all the messages have been
+                        # processed
+                    print(f"\tEnd search for '{guild.name}'")
+                    embed = embed_start_end_bot(END_MESSGAE, welcome_channel,
+                                                                users_added)
+                    await bot_log_channel.send(embed=embed)
+                    # End run
 
-                embed = embed_abrupt_end("Error", users_added)
-                await bot_log_channel.send(embed=embed)
-                raise e
-
-            finally:
-                # end message to console
-                print("Ending program.")
-
-                # End run
-                await client.close()
+        await client.close()
 
     # run client
     client.run(secret.TOKEN)
+
+async def assign_nick_name(nick_name, user):
+
+    try:
+        # assign nick_name to user
+        await user.edit(nick=nick_name)
+        print(f"\tAssigned '{nick_name}' to " +
+                                f"{user.name}")
+        return True
+
+    except Exception as e:
+        embed = embed_unsuccessful_assign(user,
+                                    name=nick_name)
+        await bot_log_channel.send(embed=embed)
+
+        print("\tUnable to assign nick name to " +
+                                f"{user.name}")
+        return False
+
+
+async def assign_role(role, user, bot_log_channel):
+
+    try:
+        # Add role to user
+        await user.add_roles(role)
+        print(f"\tAssigned '{STUDENT_ROLE}' role to " +
+                               f"{user.name}")
+        return True
+
+    except Exception as e:
+
+        embed = embed_unsuccessful_assign(user,
+                                    role=role)
+        await bot_log_channel.send(embed=embed)
+
+        print("\tUnable to assign role to " +
+                               f"{user.name}")
+        print(f"\t\tIs bot's permisson level "+
+                f"above {STUDENT_ROLE}?")
+
+        return False
+
+async def close_if_no_guilds(client):
+
+    # check if bot is not in any servers
+    if len(client.guilds) == 0:
+        print("Error: Bot is in no servers.")
+        await client.close()
 
 def guild_correctly_set_up(guild):
 
@@ -214,10 +187,86 @@ def guild_correctly_set_up(guild):
         # put channel name in list
         guild_channels.append(channel.name)
 
-    if (WELCOME_CHANNEL_NAME not in guild_channels) or (BOT_CHANNEL_NAME not in guild_channels):
+    if (WELCOME_CHANNEL_NAME not in guild_channels):
+        return False
+
+    if (BOT_CHANNEL_NAME not in guild_channels):
         return False
 
     return True
+
+async def handle_message(message, client, guest_list, bot_log_channel):
+
+    users_added = 0
+
+    # Skip messages sent by bot
+    if (message.author != client.user):
+
+        # grab nick_name and user objects
+        nick_name = message.content.lower()
+        user = message.author
+
+        # Check if user doesn't have role
+        if (len(user.roles) == 1):
+
+            # check if user is in CSV
+            if nick_name in guest_list:
+
+                # format nickname nicely
+                nick_name = format_nick_name(nick_name)
+
+                # grab student role
+                    #role_id = 1062778282640166973
+                role = discord.utils.get(message.guild.roles,
+                                                name=STUDENT_ROLE)
+
+                attempt1 = await assign_nick_name(nick_name,
+                                                           user)
+
+                attempt2 = await assign_role(role, user,
+                                                bot_log_channel)
+
+
+                # create success embed
+                if (attempt1) and (attempt2):
+
+                    users_added += 1
+
+                    embed = embed_successful_assign(nick_name,
+                                                        user,
+                                                        role)
+
+                    # add BOT_REACTION to message
+                    await message.add_reaction(BOT_REACTION)
+
+                    # send success embed to bot channel
+                    await bot_log_channel.send(embed=embed)
+
+                    # log to file
+                    log_to_file(LOG_FILE, nick_name, user)
+
+                    # increase users added count
+
+            # nick_name is not in student file
+            else:
+                # create error embed
+                embed = embed_user_error(nick_name)
+
+                # send error embed
+                await message.channel.send(message.author.mention,
+                                            embed=embed)
+
+                embed = embed_unsuccessful_assign(user,
+                                                name=nick_name)
+
+                await bot_log_channel.send(embed=embed)
+
+                # delete seen message for ease's sake
+                    # bot will work without this, but this
+                    # declutters the channel a little
+                await message.delete()
+
+    return users_added
 
 # embed for unexpected end
 def embed_abrupt_end(type, users_added):
@@ -311,10 +360,10 @@ def embed_successful_assign(name, user, role):
 
     return embed
 
-# embed for unsuccessful assign of role
+# embed for unsuccessful assign of nick_name
     # triggers when attempted name is not in guest_list
     # - for use in bot log channel
-def embed_unsuccessful_assign(name, user):
+def embed_unsuccessful_assign(user, name=None, role=None):
         now = datetime.now()
         user_display = user.name
         user_id = user.id
@@ -322,9 +371,16 @@ def embed_unsuccessful_assign(name, user):
         embed = discord.Embed(title=f"Unable to Add New Student",
                         color = ERROR_COLOR)
 
-        embed.add_field(name=f"Attempted Name",
-                        value=f"{name}",
-                        inline=False)
+
+        if (name):
+            embed.add_field(name=f"Attempted Name",
+                            value=f"{name}",
+                            inline=False)
+        if (role):
+            embed.add_field(name=f"Attempted Role",
+                            value=f"{role.mention} - " +
+                            "Please check if bot's permissions are above role",
+                            inline=False)
 
         embed.add_field(name=f"Discord Name",
                         value=f"{user_display}",
