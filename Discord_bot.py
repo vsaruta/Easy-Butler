@@ -29,7 +29,7 @@ def run_discord_bot():
     intents.message_content = True
 
     # Create the bot client, with a prefix of .
-        # irrelevant in butler bot
+        # prefix irrelevant in butler bot
     client = commands.Bot(command_prefix='.', intents=intents)
 
     @client.event
