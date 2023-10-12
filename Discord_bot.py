@@ -22,11 +22,13 @@ def run_discord_bot():
     @client.event
     async def on_ready():
 
+        # Begin running bot
         print(f"Running {client.user.name}")
+
         # get semester name
         current_semester = get_current_semester_string()
 
-        # check if client in guilds
+        # check if client in any guilds
         if ( get_guild_count(client) == 0 ):
 
             # print error message
@@ -62,7 +64,7 @@ def run_discord_bot():
 
                     # print scanning has started
                     print(f"\tScanning messages in #{WELCOME_CHANNEL_NAME}")
-                    
+
                     # Fetch all messages in the welcome channel
                     async for message in welcome_channel.history(limit=None):
 
@@ -102,6 +104,7 @@ def run_discord_bot():
 
                 # server does not have proper channels
                 else:
+                    # print to console
                     print("\tServer set up incorrectly:")
 
                     # if no welcome channel
