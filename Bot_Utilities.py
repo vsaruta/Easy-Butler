@@ -13,8 +13,7 @@ async def assign_nick_name(nick_name, user, bot_log_channel):
         return True
 
     except Exception as e:
-        embed = embed_unsuccessful_assign(user,
-                                    name=nick_name)
+        embed = embed_unsuccessful_assign(user, name=nick_name, e=e)
         await bot_log_channel.send(embed=embed)
 
         print(f"\n\t( -N ) Unable to assign nick name to {user.name}")
@@ -31,8 +30,7 @@ async def assign_role(role, user, bot_log_channel):
 
     except Exception as e:
 
-        embed = embed_unsuccessful_assign(user,
-                                    role=role)
+        embed = embed_unsuccessful_assign(user, role=role, e=e)
         await bot_log_channel.send(embed=embed)
 
         print(f"\t( -R ) Unable to assign role to {user.name}")
@@ -52,7 +50,7 @@ async def handle_message(message, client, guest_list, bot_log_channel, guild):
         nick_name = message.content.lower()
         user = message.author
 
-        # Check if user doesn't have role
+        # Check if user only has @everyone role
         if (len(user.roles) == 1):
 
             # check if user is in CSV
@@ -62,28 +60,24 @@ async def handle_message(message, client, guest_list, bot_log_channel, guild):
                 nick_name = format_nick_name(nick_name)
 
                 # grab student role
-                    #role_id = 1062778282640166973
                 role = discord.utils.get(message.guild.roles,
                                                 name=STUDENT_ROLE)
 
-                attempt1 = await assign_nick_name(nick_name,
-                                                           user,
-                                                           bot_log_channel)
+                assign_nick = await assign_nick_name(nick_name, user,
+                                                            bot_log_channel)
 
-                attempt2 = await assign_role(role, user,
+                assign_student_role = await assign_role(role, user,
                                                 bot_log_channel)
 
 
                 # create success embed
-                if (attempt1) and (attempt2):
+                if (assign_nick) and (assign_student_role):
 
                     # increase users addeed by 1
                     users_added = 1
 
                     # send success message
-                    embed = embed_successful_assign(nick_name,
-                                                        user,
-                                                        role)
+                    embed = embed_successful_assign(nick_name, user, role)
 
                     # add BOT_REACTION to message
                     await message.add_reaction(BOT_REACTION)
@@ -156,25 +150,25 @@ def get_current_semester_string():
     # Get the current date
     current_date = datetime.now()
 
-    # dates for sping semester
+    # dates for sping semester (1/13 ~ 5/3)
     sp_month_start = 1
     sp_day_start   = 13
     sp_month_end   = 5
     sp_day_end     = 3
 
-    # dates for summer semester
+    # dates for summer semester (5/4 ~ 7/31)
     su_month_start = 5
     su_day_start   = 4
     su_month_end   = 7
     su_day_end     = 31
 
-    # dates for fall semester
+    # dates for fall semester (8/1 ~ 12/17)
     f_month_start  = 8
     f_day_start    = 1
     f_month_end    = 12
     f_day_end      = 27
 
-    # dates for spring semester
+    # dates for winter semester (12/28 ~ 1/12)
     w_month_start  = 12
     w_day_start    = 28
     w_month_end    = 1
@@ -210,10 +204,16 @@ def get_current_semester_string():
 
 def get_guest_list(filename):
 
-    # Read guest list from CSV file and convert names to lowercase
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        guest_list = [row[0].lower() for row in reader]
+     # Initialize an empty list to store the guest names
+    guest_list = []
+
+    # Open the CSV file and read the "name" field from each row
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            name = row["name"]
+            # Convert the name to lowercase and add it to the guest list
+            guest_list.append(name.lower())
 
     return guest_list
 

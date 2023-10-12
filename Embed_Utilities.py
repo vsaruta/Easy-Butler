@@ -104,7 +104,7 @@ def embed_successful_assign(name, user, role):
 # embed for unsuccessful assign of nick_name
     # triggers when attempted name is not in guest_list
     # - for use in bot log channel
-def embed_unsuccessful_assign(user, name=None, role=None):
+def embed_unsuccessful_assign(user, name=None, role=None, e=None):
 
         now = datetime.now()
         user_display = user.name
@@ -131,6 +131,11 @@ def embed_unsuccessful_assign(user, name=None, role=None):
 
         embed.add_field(name=f"Discord ID",
                             value=f"{user_id}",
+                            inline=False)
+
+        if (e):
+            embed.add_field(name="Error",
+                            value=f"{e}",
                             inline=False)
 
         embed.set_thumbnail(url=user_pfp)
