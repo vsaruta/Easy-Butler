@@ -23,7 +23,7 @@ def run_discord_bot():
     async def on_ready():
 
         # Begin running bot
-        print(f"Running {client.user.name}")
+        print(f"- Running {client.user.name}")
 
         # get semester name
         current_semester = get_current_semester_string()
@@ -32,7 +32,7 @@ def run_discord_bot():
         if ( get_guild_count(client) == 0 ):
 
             # print error message
-            print("Error: Bot is in no servers.")
+            print("- Error: Bot is in no servers.")
 
             # leave if no guilds
             await client.close()
@@ -41,7 +41,7 @@ def run_discord_bot():
         for guild in client.guilds:
 
             # begin processing guild
-            print(f"\nProcessing: '{guild.name}'")
+            print(f"\n- Processing: '{guild.name}'")
 
             # get welcome + bot channel
             welcome_channel, bot_log_channel = get_channel_objects(guild)
@@ -63,10 +63,19 @@ def run_discord_bot():
                     users_added = 0
 
                     # print scanning has started
-                    print( f"\tScanning messages in #{WELCOME_CHANNEL_NAME}" )
+                    print( f"\t- Scanning messages in #{WELCOME_CHANNEL_NAME}" )
+
+                    timestamp = await get_timestamp(bot_log_channel, limit=2)
+
+                    message_count = 0
 
                     # Fetch all messages in the welcome channel
-                    async for message in welcome_channel.history( limit=None ):
+                        # change to after=timestamp for better efficiency
+                    async for message in welcome_channel.history( around=
+                                                        timestamp ):
+
+                        # increase message count
+                        message_count += 1
 
                         # try to handle message
                         try:
@@ -81,7 +90,7 @@ def run_discord_bot():
 
                         # embed for KeyboardInterrupt
                         except KeyboardInterrupt as e:
-                            print(f"End search for '{guild.name}'\n")
+                            print(f" - End search for '{guild.name}'\n")
                             embed = embed_abrupt_end( "KeyboardInterrupt",
                                                                 users_added )
                             await bot_log_channel.send( embed=embed )
@@ -97,7 +106,9 @@ def run_discord_bot():
 
                     # Print a log message once all the messages have been
                         # processed
-                    print(f"End search for '{guild.name}'")
+                    print(f"- End: " +
+                        f"Processed {message_count} messages in '{guild.name}'")
+
                     embed = embed_start_end_bot( "Finished", welcome_channel,
                                                                 users_added )
                     await bot_log_channel.send( embed=embed )
@@ -105,24 +116,24 @@ def run_discord_bot():
                 # server does not have proper channels
                 else:
                     # print to console
-                    print("\tServer set up incorrectly:")
+                    print("\t- Server set up incorrectly:")
 
                     # if no welcome channel
                     if not welcome_channel:
 
                         #print error
-                        print(f"\t#{WELCOME_CHANNEL_NAME} not found.")
+                        print(f"\t- #{WELCOME_CHANNEL_NAME} not found.")
 
                     # if no bot channel
                     if not bot_log_channel:
 
                         #print error
-                        print(f"\t#{BOT_CHANNEL_NAME} not found.")
+                        print(f"\t- #{BOT_CHANNEL_NAME} not found.")
 
             # server name does not include
             else:
                 # print to console
-                print(f"\tLeaving '{guild.name}' - does not include "
+                print(f"\t- Leaving '{guild.name}' - does not include "
                         + f"'{current_semester}' in server name.")
 
                 # Send embed only if set up correctly
@@ -134,7 +145,7 @@ def run_discord_bot():
 
         # all guilds have been iterated through, close
         print()
-        print( f"Ending {client.user.name}" )
+        print( f"- Ending {client.user.name}" )
         await client.close()
 
     # run client

@@ -38,6 +38,13 @@ async def assign_role(role, user, bot_log_channel):
 
         return False
 
+async def get_timestamp(channel, limit = None):
+
+    async for message in channel.history( limit=limit ):
+        timestamp = message.created_at
+
+    return timestamp
+
 # this should go in bot_utilities but im not sure why it won't work
 async def handle_message(message, client, guest_list, bot_log_channel, guild):
 
@@ -219,7 +226,6 @@ def get_guest_list(filename):
 
 def get_guild_count(client):
     return len(client.guilds)
-
 
 # logs new student to file
 def log_to_file(filename, name, user, guild):
