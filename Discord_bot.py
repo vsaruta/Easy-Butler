@@ -47,26 +47,26 @@ def run_discord_bot():
             welcome_channel, bot_log_channel = get_channel_objects(guild)
 
             # check if server is current
-            if ( is_current_server(guild, current_semester) ):
+            if ( is_current_server( guild, current_semester ) ):
 
                 # check if both bot channel + welcome channel
                 if ( welcome_channel and bot_log_channel ):
 
                     # send to log channel that processing has started
-                    embed = embed_start_end_bot("Started", welcome_channel)
-                    await bot_log_channel.send(embed=embed)
+                    embed = embed_start_end_bot( "Started", welcome_channel )
+                    await bot_log_channel.send( embed=embed )
 
                     # get guest list
-                    guest_list = get_guest_list(CSV_FILE)
+                    guest_list = get_guest_list( CSV_FILE )
 
                     # initialize count for users added
                     users_added = 0
 
                     # print scanning has started
-                    print(f"\tScanning messages in #{WELCOME_CHANNEL_NAME}")
+                    print( f"\tScanning messages in #{WELCOME_CHANNEL_NAME}" )
 
                     # Fetch all messages in the welcome channel
-                    async for message in welcome_channel.history(limit=None):
+                    async for message in welcome_channel.history( limit=None ):
 
                         # try to handle message
                         try:
@@ -77,30 +77,30 @@ def run_discord_bot():
                                                                 guild)
 
                             # wait for wait limit, if thats an issue.
-                            time.sleep(WAIT_FOR_RATE_LIMIT)
+                            time.sleep( WAIT_FOR_RATE_LIMIT )
 
                         # embed for KeyboardInterrupt
                         except KeyboardInterrupt as e:
                             print(f"End search for '{guild.name}'\n")
-                            embed = embed_abrupt_end("KeyboardInterrupt",
-                                                                users_added)
-                            await bot_log_channel.send(embed=embed)
+                            embed = embed_abrupt_end( "KeyboardInterrupt",
+                                                                users_added )
+                            await bot_log_channel.send( embed=embed )
                             await client.close()
 
                         # embed exception if anything else goes awry
                         except Exception as e:
-                            embed = embed_abrupt_end("Error", users_added,
-                                                                    str(e))
-                            await bot_log_channel.send(embed=embed)
+                            embed = embed_abrupt_end( "Error", users_added,
+                                                                    str(e) )
+                            await bot_log_channel.send( embed=embed )
                             raise e
                             await client.close()
 
                     # Print a log message once all the messages have been
                         # processed
                     print(f"End search for '{guild.name}'")
-                    embed = embed_start_end_bot("Finished", welcome_channel,
-                                                                users_added)
-                    await bot_log_channel.send(embed=embed)
+                    embed = embed_start_end_bot( "Finished", welcome_channel,
+                                                                users_added )
+                    await bot_log_channel.send( embed=embed )
 
                 # server does not have proper channels
                 else:
@@ -127,17 +127,17 @@ def run_discord_bot():
 
                 # Send embed only if set up correctly
                 if bot_log_channel:
-                    embed = embed_leave_message(current_semester)
-                    await bot_log_channel.send(embed=embed)
+                    embed = embed_leave_message( current_semester )
+                    await bot_log_channel.send( embed=embed )
 
                 await guild.leave()
 
         # all guilds have been iterated through, close
         print()
-        print(f"Ending {client.user.name}")
+        print( f"Ending {client.user.name}" )
         await client.close()
 
     # run client
-    client.run(secret.TOKEN)
+    client.run( secret.TOKEN )
 
 run_discord_bot()
