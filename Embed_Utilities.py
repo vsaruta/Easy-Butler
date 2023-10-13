@@ -17,7 +17,7 @@ def embed_abrupt_end(type, users_added, e =""):
     embed.add_field(name = "Context",
                     value = f"{e[-500:]}")
 
-    embed.set_footer(text=f"{now}")
+    embed.set_footer(text=now)
 
     return embed
 
@@ -57,7 +57,7 @@ def embed_start_end_bot(state, channel, users_added = 0, messages = 0):
                         description=f"{channel_mention}",
                         color = NEUTRAL_COLOR)
 
-    embed.set_footer(text=f"{now}")
+    embed.set_footer(text=now)
 
     if (state == "Finished"):
 
@@ -100,7 +100,7 @@ def embed_successful_assign(name, user, role):
 
     embed.set_thumbnail(url=user_pfp)
 
-    embed.set_footer(text=f"{now}")
+    embed.set_footer(text=now)
 
     return embed
 
@@ -146,7 +146,7 @@ def embed_unsuccessful_assign(user, name=None, role=None, e=None):
 
         embed.set_thumbnail(url=user_pfp)
 
-        embed.set_footer(text=f"{now}")
+        embed.set_footer(text=now)
 
         return embed
 
