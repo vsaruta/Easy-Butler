@@ -106,7 +106,8 @@ async def handle_message(message, client, guest_list, bot_log_channel, guild):
 
                 # create error embed
                 embed = embed_unsuccessful_assign(user,
-                                                name=nick_name)
+                                                name=nick_name,
+                                                e="Nickname not in guest list")
                 # send error embed for log keeping
                 await bot_log_channel.send(embed=embed)
 

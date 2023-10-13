@@ -34,6 +34,8 @@ def run_discord_bot():
             # print error message
             print("- Error: Bot is in no servers.")
 
+            print( f"- Ending {client.user.name}" )
+
             # leave if no guilds
             await client.close()
 
@@ -110,7 +112,8 @@ def run_discord_bot():
                         f"Processed {message_count} messages in '{guild.name}'")
 
                     embed = embed_start_end_bot( "Finished", welcome_channel,
-                                                                users_added )
+                                                                users_added,
+                                                                message_count )
                     await bot_log_channel.send( embed=embed )
 
                 # server does not have proper channels
@@ -142,6 +145,16 @@ def run_discord_bot():
                     await bot_log_channel.send( embed=embed )
 
                 await guild.leave()
+
+                # check if client in any more guilds
+                if ( get_guild_count(client) == 0 ):
+
+                    # print error message
+                    print("- Error: Bot is in no more servers.")
+
+                    print( f"- Ending {client.user.name}" )
+                    # leave if no guilds
+                    await client.close()
 
         # all guilds have been iterated through, close
         print()
