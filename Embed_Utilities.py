@@ -161,7 +161,7 @@ def embed_user_error(nick_name):
                         color = ERROR_COLOR)
 
     embed.add_field(name=f"{nick_name}",
-                        value = "please double check if your name is "+
+                        value = "Please double check if your name is "+
                         "spelled the same as on Canvas.",
                         inline=False)
 
