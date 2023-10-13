@@ -29,7 +29,7 @@ def embed_client_error(user, type):
     embed = discord.Embed(title=f"Unable to add {type} to {user.name}",
                     color = ERROR_COLOR)
 
-    embed.set_footer(text=f"{now}")
+    embed.set_footer(text=now)
 
     return embed
 
@@ -42,7 +42,7 @@ def embed_leave_message(current_semester):
                                 f"'{current_semester}' in its name.",
                     color = NEUTRAL_COLOR)
 
-    embed.set_footer(text=f"{now}")
+    embed.set_footer(text=now)
 
     return embed
 
