@@ -144,6 +144,7 @@ def run_discord_bot():
                     embed = embed_leave_message( current_semester )
                     await bot_log_channel.send( embed=embed )
 
+                # leave the guilds
                 await guild.leave()
 
                 # check if client in any more guilds
@@ -159,6 +160,8 @@ def run_discord_bot():
         # all guilds have been iterated through, close
         print()
         print( f"- Ending {client.user.name}" )
+
+        # close client
         await client.close()
 
     # run client
