@@ -9,6 +9,9 @@ import csv
 import secret
 
 def run_discord_bot():
+    # Initilize variables
+    # get semester name
+    current_semester = get_current_semester_string()
 
     # Intents for the bot, this allows the bot to read the members of the server
     intents = discord.Intents.default()
@@ -24,9 +27,6 @@ def run_discord_bot():
 
         # Begin running bot
         print(f"- Running {client.user.name}")
-
-        # get semester name
-        current_semester = get_current_semester_string()
 
         # check if client in any guilds
         if ( get_guild_count(client) == 0 ):

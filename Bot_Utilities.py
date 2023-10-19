@@ -62,9 +62,10 @@ async def handle_message(message, client, guest_list, bot_log_channel, guild):
 
             # check if user is in CSV
             if nick_name in guest_list:
-
+                
                 # format nickname nicely
-                nick_name = format_nick_name(nick_name)
+                #nick_name = format_nick_name(nick_name)
+                nick_name = guest_list[guest_list.index(nick_name)]
 
                 # grab student role
                 role = discord.utils.get(message.guild.roles,
