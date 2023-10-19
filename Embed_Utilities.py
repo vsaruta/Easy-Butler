@@ -118,13 +118,16 @@ def embed_unsuccessful_assign(user, name=None, role=None, e=None):
 
         embed = discord.Embed(title=f"Unable to Add New Student",
                             color = ERROR_COLOR)
-
+        
+        embed.add_field(name = f"A Time Stamp",
+                        value = now,
+                        inline = False)
 
         embed.add_field(name=f"Discord Account",
                             value=f"{user_mention}",
                             inline=False)
 
-        embed.add_field(name=f"Current Roles",
+        embed.add_field(name=f"Current Roles At A Timestamp",
                             value=", ".join(role_names),
                             inline=False)
 
@@ -145,8 +148,8 @@ def embed_unsuccessful_assign(user, name=None, role=None, e=None):
                             inline=False)
 
         embed.set_thumbnail(url=user_pfp)
-
-        embed.set_footer(text=now)
+        
+        embed.set_footer(text="END OF LOG MESSAGE")
 
         return embed
 
