@@ -199,7 +199,7 @@ def display_menu():
     print_formatted("Program Choices", 1)
     print_formatted("[1] Process New Students")
     print_formatted("[2] Re-role Former Students")
-    print_formatted("[3] Clean Up Welcome Channel")
+    print_formatted("[3] Clear *All* Messages in Welcome Channel")
 
 '''
 Function to check if a server (guild) name contains the current semester.
