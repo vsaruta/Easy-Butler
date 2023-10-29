@@ -47,7 +47,6 @@ def run_discord_bot():
 
             # print error message
             print_formatted("Error: Bot is in no servers.", 1)
-
             print_formatted(f"Ending {client.user.name}", 1)
 
             # leave if no guilds
@@ -72,6 +71,7 @@ def run_discord_bot():
                     # check if both bot channel + welcome channel
                     if ( welcome_channel and bot_log_channel ):
 
+                        # check if bot is able to assign role
                         if can_manage_role( client, guild, STUDENT_ROLE ):
 
                             # process new students
@@ -80,6 +80,7 @@ def run_discord_bot():
                                             welcome_channel, bot_log_channel)
 
 
+                        # bot cannot assign role
                         else:
                             print_formatted(f"Bot unable to manage <{STUDENT_ROLE}>.", 1)
 
@@ -107,16 +108,18 @@ def run_discord_bot():
                     # check if bot_log_channel exists
                     if bot_log_channel:
 
+                        # check if bot can manage role
                         if (can_manage_role( client, guild, STUDENT_ROLE ) and
                             can_manage_role( client, guild, FORMER_ROLE ) ):
 
                             await rerole_former_students( client, guild,
                                                                 bot_log_channel)
-
+                        # bot cannot manage role
                         else:
                             print_formatted(f"Bot unable to manage <{STUDENT_ROLE}>" +
                                 f" and <{FORMER_ROLE}>.", 1)
 
+                    # server set up incorrectly for this action
                     else:
 
                         # print to console
@@ -130,6 +133,7 @@ def run_discord_bot():
                     # function: clean up welcome-channel
                 elif menu_choice == 3:
 
+                    # clean channel, grab messages deleted
                     messages = await clean_channel(welcome_channel, bot_log_channel)
 
                     m = f"Messages deleted: {messages}"
@@ -246,7 +250,8 @@ async def process_new_students( client, guild, welcome_channel,
                         users_added += 1
 
                     else:
-
+                        # catches if student has been added but they
+                        # said invalid stuff after added
                         if (role not in user.roles):
 
                             # create error embed
@@ -332,6 +337,9 @@ async def rerole_former_students( client, guild, bot_log_channel ):
 
             # increase users assigned
             users_reassigned += 1
+
+    embed = embed_start_end_bot( 2, "Finished", users_added = users_reassigned )
+    await bot_log_channel.send( embed=embed )
 
 # Function: clean_welcome ( client, guild )
 # Delete message in welcome if succssfully added to Students and Renamed them
