@@ -77,8 +77,9 @@ def run_discord_bot():
                             # process new students
                             # TODO: link STUDENT_ROLE to handle_message
                             await process_new_students( client, guild,
-                                                                welcome_channel,
-                                                                bot_log_channel)
+                                            welcome_channel, bot_log_channel)
+
+
                         else:
                             print_formatted(f"Bot unable to manage <{STUDENT_ROLE}>.", 1)
 
@@ -128,7 +129,11 @@ def run_discord_bot():
                 # option 3:
                     # function: clean up welcome-channel
                 elif menu_choice == 3:
-                    pass
+
+                    messages = await clean_channel(welcome_channel, bot_log_channel)
+
+                    m = f"Messages deleted: {messages}"
+                    print_formatted(m, 1)
 
             # server name does not include correct naming
             else:
@@ -168,60 +173,117 @@ def run_discord_bot():
 async def process_new_students( client, guild, welcome_channel,
                                                             bot_log_channel ):
 
+    # initialize variables
+    guest_list = get_guest_list( CSV_FILE )
+    users_added = 0
+    message_count = 0
+    delete_mentions = []
+    role = get_role(guild, STUDENT_ROLE)
+
+
     # send to log channel that processing has started
     # embed_start_end_bot(menu, state, channel=None, users_added = 0, messages = 0):
     embed = embed_start_end_bot( 1, "Started", channel=welcome_channel )
     await bot_log_channel.send( embed=embed )
 
-    # get guest list
-        # guest list is in LOWER
-    guest_list = get_guest_list( CSV_FILE )
-
-    # initialize count for users added
-    users_added = 0
-
     # print scanning has started
     print_formatted( f"Scanning messages in #{WELCOME_CHANNEL_NAME}", 1 )
 
-    timestamp = await get_timestamp(bot_log_channel, limit=2)
-
-    message_count = 0
-
     # Fetch all messages in the welcome channel
         # change to after=timestamp for better efficiency
-    async for message in welcome_channel.history( around=
-                                        timestamp ):
+        # reverse = True: Will grab messages from the bottom and go
+        # to the top
+    async for message in welcome_channel.history( limit = None ):
 
         # increase message count
         message_count += 1
 
-        # try to handle message
-        try:
-            # Handle the messages, return the users added
-            users_added += await handle_message(message,
-                                                client,
-                                                guest_list,
-                                                bot_log_channel,
-                                                guild)
+        # Check that bot is above user's role
+            # Bot will ignore anybody above its permissions
+        if guild.me.top_role >= message.author.top_role:
 
-            # wait for wait limit, if thats an issue.
-            time.sleep( WAIT_FOR_RATE_LIMIT )
+            # check if messages sent by bot
+            if (message.author == client.user):
 
-        # embed for KeyboardInterrupt
-        except KeyboardInterrupt as e:
-            print_formatted(f"End search for '{guild.name}'")
-            embed = embed_abrupt_end( "KeyboardInterrupt",
-                                                users_added )
-            await bot_log_channel.send( embed=embed )
-            await client.close()
+                # iterate through all items in delete_mentions
+                for user_obj in delete_mentions:
 
-        # embed exception if anything else goes awry
-        except Exception as e:
-            embed = embed_abrupt_end( "Error", users_added,
-                                                    str(e) )
-            await bot_log_channel.send( embed=embed )
-            raise e
-            await client.close()
+                    # check if user was mentioned in bot message
+                    if user_obj.mentioned_in(message):
+
+                        # delete message
+                        await message.delete()
+
+                        # break out since only one member can be mentioned
+                        break
+
+            # message not sent by bot
+            else:
+
+                # try to add user
+                try:
+
+                    # grab user object and nick name str
+                    user = message.author
+                    nick_name = message.content.lower()
+
+                    # Handle the messages, return the users added
+                    added_user = await add_student(guest_list, user, nick_name,
+                                                                    role, guild )
+
+                    # check if user was added
+                    if ( added_user ):
+
+                        # send success message
+                        embed = embed_successful_assign(nick_name, user, role)
+
+                        # send success embed to bot channel
+                        await bot_log_channel.send(embed=embed)
+
+                        # add user to delete_mentions
+                        delete_mentions.append(message.author)
+
+                        users_added += 1
+
+                    else:
+
+                        if (role not in user.roles):
+
+                            # create error embed
+                            embed = embed_user_error(nick_name)
+
+                            # send error embed for user to see
+                            await message.channel.send(message.author.mention,
+                                                        embed=embed)
+
+                            # create error embed
+                            embed = embed_unsuccessful_assign(user,
+                                                            name=nick_name,
+                                                            e="Nickname not in guest list")
+                            # send error embed for log keeping
+                            await bot_log_channel.send(embed=embed)
+
+                    # delete user message
+                    await message.delete()
+
+                    # wait for wait limit, if thats an issue.
+                    time.sleep( WAIT_FOR_RATE_LIMIT )
+
+                # embed for KeyboardInterrupt
+                except KeyboardInterrupt as e:
+                    print_formatted(f"End search for '{guild.name}'")
+                    embed = embed_abrupt_end( "KeyboardInterrupt",
+                                                        users_added )
+                    await bot_log_channel.send( embed=embed )
+                    await client.close()
+
+                # embed exception if anything else goes awry
+                except Exception as e:
+                    embed = embed_abrupt_end( "Error", users_added,
+                                                            str(e) )
+                    await bot_log_channel.send( embed=embed )
+                    raise e
+                    await client.close()
 
     # Print a log message once all the messages have been
         # processed
@@ -231,6 +293,7 @@ async def process_new_students( client, guild, welcome_channel,
     embed = embed_start_end_bot( 1, "Finished", welcome_channel,
                                                 users_added,
                                                 message_count )
+
     await bot_log_channel.send( embed=embed )
 
 # Function: rerole_former_students( client, guild, bot_log_channel )
@@ -265,16 +328,43 @@ async def rerole_former_students( client, guild, bot_log_channel ):
             # send success
                 # TODO: check if actually successful...
             embed = embed_successful_rerole( member, old_role, new_role )
-
             await bot_log_channel.send( embed=embed )
 
+            # increase users assigned
             users_reassigned += 1
 
-    # embed_start_end_bot(menu, state, channel=None, users_added = 0, messages = 0)
-    embed = embed_start_end_bot( 2, "Finished", users_added = users_reassigned)
+# Function: clean_welcome ( client, guild )
+# Delete message in welcome if succssfully added to Students and Renamed them
+async def clean_channel( channel , bot_log_channel):
+
+    # declare Variables
+    messages = 0
+
+    embed = embed_start_end_bot( 3, "Started", channel)
     await bot_log_channel.send( embed=embed )
 
-# Function: clean_welcome ( client, guild)
+    # print scanning has started
+    print_formatted( f"Deleting messages in #{channel.name}", 1 )
 
+    async for message in channel.history( limit = None ):
+
+        m = f"Deleing message by {message.author.name}:"
+        print_formatted( m, 1)
+
+        m = f"Content: {message.content}"
+        print_formatted( m, 2)
+
+        m = f"Timestamp: {message.created_at}"
+        print_formatted( m, 2)
+
+        await message.delete()
+
+        messages += 1
+
+    embed = embed_start_end_bot( 3, "Finished", channel, messages = messages)
+    await bot_log_channel.send( embed=embed )
+
+
+    return messages
 # Run bot
 run_discord_bot()

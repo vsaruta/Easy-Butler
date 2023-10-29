@@ -92,6 +92,16 @@ def embed_start_end_bot(menu, state, channel=None, users_added = 0, messages = 0
         if (state == "Finished"):
             fields.insert( -1, (f"Students re-assigned: {users_added}","") )
 
+    if menu == 3:
+
+        title = f"{state} clearing messages."
+        title_desc = f'<#{channel.id}>'
+
+        if (state == "Finished"):
+
+             fields.insert( -1, (f"Messages Deleted: {messages}", "") )
+
+
     return universal_embed(title, title_desc, color, fields, footer=timestamp)
 
 # embed for successful assigning of name and role
@@ -131,8 +141,8 @@ def embed_successful_rerole(user, old_role, new_role):
 def embed_unsuccessful_assign(user, name=None, role=None, e=None):
 
         user_roles = user.roles
-        role_names = [role.name for role in user_roles]
-        join_roles = ", ".join(role_names)
+        role_mentions = [role.mention for role in user_roles]
+        join_role_mentions = ", ".join(role_mentions)
 
         title = f"Unable to Add New Student"
         title_desc = ""
@@ -141,7 +151,7 @@ def embed_unsuccessful_assign(user, name=None, role=None, e=None):
 
         fields = [
                     ("Discord Account", user.mention),
-                    ("Current Roles At Timestamp", join_roles)
+                    ("Current Roles At Timestamp", join_role_mentions)
                  ]
 
         if (name):

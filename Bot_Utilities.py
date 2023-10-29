@@ -109,73 +109,34 @@ Returns:
     users_added: int
         - The number of users added or processed
 '''
-async def handle_message(message, client, guest_list, bot_log_channel, guild):
+async def add_student(guest_list, user, nick_name, role, guild):
 
-    users_added = 0
+    # Check if user only has @everyone role
+    if (len(user.roles) == 1):
 
-    # Skip messages sent by bot
-    if (message.author != client.user):
+        # check if in guest list
+        if nick_name in guest_list:
 
-        # grab nick_name and user objects
-        nick_name = message.content.lower()
-        user = message.author
+            # format nickname nicely
+            #nick_name = format_nick_name(nick_name)
+            nick_name = format_nick_name(nick_name)
 
-        # Check if user only has @everyone role
-        if (len(user.roles) == 1):
+            await user.edit(nick=nick_name)
+            print_formatted(f"( +N ) Assigned name '{nick_name}' to {user.name}", 1)
 
-            # check if in guest list
-            if nick_name in guest_list:
+            # grab student role
+            role = get_role(guild, STUDENT_ROLE)
 
-                # format nickname nicely
-                #nick_name = format_nick_name(nick_name)
-                nick_name = format_nick_name(nick_name)
+            await user.add_roles(role)
+            print_formatted(f"( +R ) Assigned '{STUDENT_ROLE}' role to {user.name}\n", 1)
 
-                await user.edit(nick=nick_name)
-                print_formatted(f"( +N ) Assigned name '{nick_name}' to {user.name}", 1)
+            # log to file
+            #log_to_file(LOG_FILE, nick_name, user, guild)
 
-                # grab student role
-                role = get_role(guild, STUDENT_ROLE)
+            return True
 
-                await user.add_roles(role)
-                print_formatted(f"( +R ) Assigned '{STUDENT_ROLE}' role to {user.name}\n", 1)
-
-                # increase users addeed by 1
-                users_added = 1
-
-                # send success message
-                embed = embed_successful_assign(nick_name, user, role)
-
-                # add BOT_REACTION to message
-                await message.add_reaction(BOT_REACTION)
-
-                # send success embed to bot channel
-                await bot_log_channel.send(embed=embed)
-
-                # log to file
-                #log_to_file(LOG_FILE, nick_name, user, guild)
-
-            # nick_name is not in student file
-            else:
-                # create error embed
-                embed = embed_user_error(nick_name)
-
-                # send error embed for user to see
-                await message.channel.send(message.author.mention,
-                                            embed=embed)
-
-                # create error embed
-                embed = embed_unsuccessful_assign(user,
-                                                name=nick_name,
-                                                e="Nickname not in guest list")
-                # send error embed for log keeping
-                await bot_log_channel.send(embed=embed)
-
-                # delete seen message for ease's sake
-                    # bot will work without this, but this
-                    # declutters the channel a little
-                await message.delete()
-
-    return users_added
+        # nick_name is not in student file
+        return False
 
 '''
 Function to check if client can manage role
