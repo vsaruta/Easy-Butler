@@ -2,6 +2,7 @@
 CSV_FILE = "fall_2023_cs126_names.csv"
 LOG_FILE = "discord_log.txt"
 STUDENT_ROLE = "Students"
+FORMER_ROLE = "Former Student"
 WELCOME_CHANNEL_NAME = "welcome"
 BOT_CHANNEL_NAME = "bot_log"
 NEUTRAL_COLOR = 0x4895FF # hex
