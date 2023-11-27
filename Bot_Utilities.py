@@ -168,6 +168,22 @@ def can_manage_role(client, guild, target_role_name):
     print_formatted(f"<{target_role_name}> does not exist!", 1)
 
     return False
+'''
+Function to get a list of guest names from CANVAS
+
+Returns:
+    guest_list: list
+        - A list of guest names (in lowercase)
+'''
+def canv_guest_list( TOKEN ):
+
+    '''
+        CODE NEEDED FROM VOVA
+    '''
+
+    # returns a list of canvas names
+    print("Not yet implemented")
+    quit()
 
 '''
 OBSOLETE | Function to compare two strings while ignoring spaces and hyphens.
@@ -192,14 +208,43 @@ def compare_strings(input_str, name):
     return normalized_input == normalized_name
 
 '''
+Function to get a list of guest names from a CSV file.
+
+Parameters:
+    filename: str
+        - The filename of the CSV file containing guest names
+
+Returns:
+    guest_list: list
+        - A list of guest names (in lowercase)
+'''
+def csv_guest_list(filename):
+
+     # Initialize an empty list to store the guest names
+    guest_list = []
+
+    # Open the CSV file and read the "name" field from each row
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            name = row["name"]
+            # Convert the name to lowercase and add it to the guest list
+            guest_list.append(name)
+
+    return guest_list
+
+'''
 Function to display a menu of program choices.
 '''
 def display_menu():
 
     print_formatted("Program Choices", 1)
-    print_formatted("[1] Process New Students")
-    print_formatted("[2] Re-role Former Students")
-    print_formatted("[3] Clear *All* Messages in Welcome Channel")
+    print_formatted("[1] Process New Students with .csv")
+    print_formatted("[2] Process New Students with Canvas")
+    print_formatted("[3] Re-role Former Students")
+    print_formatted("[4] Clear *All* Messages in Welcome Channel")
+    print_formatted("[5] Quit")
+
 
 '''
 Function to check if a server (guild) name contains the current semester.
@@ -340,32 +385,6 @@ def get_current_semester_string():
     season_year_str = f"{current_season} {current_date.year}"
 
     return season_year_str
-
-'''
-Function to get a list of guest names from a CSV file.
-
-Parameters:
-    filename: str
-        - The filename of the CSV file containing guest names
-
-Returns:
-    guest_list: list
-        - A list of guest names (in lowercase)
-'''
-def get_guest_list(filename):
-
-     # Initialize an empty list to store the guest names
-    guest_list = []
-
-    # Open the CSV file and read the "name" field from each row
-    with open(filename, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            name = row["name"]
-            # Convert the name to lowercase and add it to the guest list
-            guest_list.append(name.lower())
-
-    return guest_list
 
 '''
 Function to get the count of Discord servers (guilds) that the bot is a member of.

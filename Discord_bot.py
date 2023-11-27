@@ -13,6 +13,7 @@ def run_discord_bot():
     # get semester name
     current_semester = get_current_semester_string()
     menu_choice = -1
+    LONG_LINE = "======================================================"
 
     # Intents for the bot, this allows the bot to read the members of the server
     intents = discord.Intents.default()
@@ -23,31 +24,38 @@ def run_discord_bot():
         # prefix irrelevant in butler bot
     client = commands.Bot(command_prefix='.', intents=intents)
 
+    print()
+    print(LONG_LINE)
     # ask for menu choice
     display_menu()
 
-    while (menu_choice < 0) or (menu_choice > 3):
+    while ( menu_choice < 0 ) or ( menu_choice > 5 ):
 
         try:
-            menu_choice = int(input("Choose Program: "))
+            menu_choice = int(input("\n\tChoose Program: "))
 
         except ValueError:
             menu_choice = -1
 
-    print_formatted("Beginning Program...")
+    if (menu_choice == 4):
+        print_formatted( "Ended program." )
+        quit()
+
+    print(LONG_LINE)
+    print_formatted( "Beginning Program..." )
 
     @client.event
     async def on_ready():
 
         # Begin running bot
-        print_formatted(f"Running {client.user.name}")
+        print_formatted( f"Running {client.user.name}\n" )
 
         # check if client in any guilds
         if ( get_guild_count(client) == 0 ):
 
             # print error message
-            print_formatted("Error: Bot is in no servers.", 1)
-            print_formatted(f"Ending {client.user.name}", 1)
+            print_formatted( "Error: Bot is in no servers.", 1 )
+            print_formatted( f"Ending {client.user.name}", 1 )
 
             # leave if no guilds
             await client.close()
@@ -65,8 +73,14 @@ def run_discord_bot():
             # check if server is current
             if ( is_current_server( guild, current_semester ) ):
 
-                # option 1: process_new_students
-                if menu_choice == 1:
+                # option 1, 2: process_new_students
+                if menu_choice == 1 or menu_choice == 2:
+
+                    # CSV guest list or Canvas guest_list
+                    if menu_choice == 1:
+                        guest_list = csv_guest_list( CSV_FILE )
+                    else:
+                        guest_list = canv_guest_list( CANVAS_TOKEN )
 
                     # check if both bot channel + welcome channel
                     if ( welcome_channel and bot_log_channel ):
@@ -75,9 +89,10 @@ def run_discord_bot():
                         if can_manage_role( client, guild, STUDENT_ROLE ):
 
                             # process new students
-                            # TODO: link STUDENT_ROLE to handle_message
                             await process_new_students( client, guild,
-                                            welcome_channel, bot_log_channel)
+                                                                welcome_channel,
+                                                                bot_log_channel,
+                                                                guest_list)
 
 
                         # bot cannot assign role
@@ -101,9 +116,9 @@ def run_discord_bot():
                             #print error
                             print_formatted(f"#{BOT_CHANNEL_NAME} not found.", 1)
 
-                # option 2:
+                # option 3:
                     # function: rerole_former_students
-                elif menu_choice == 2:
+                elif menu_choice == 3:
 
                     # check if bot_log_channel exists
                     if bot_log_channel:
@@ -129,9 +144,9 @@ def run_discord_bot():
                         print_formatted(f"#{BOT_CHANNEL_NAME} not found.", 1)
 
 
-                # option 3:
+                # option 4:
                     # function: clean up welcome-channel
-                elif menu_choice == 3:
+                elif menu_choice == 4:
 
                     # clean channel, grab messages deleted
                     messages = await clean_channel(welcome_channel, bot_log_channel)
@@ -173,21 +188,18 @@ def run_discord_bot():
     # run client
     client.run( secret.TOKEN )
 
-# Function: process_new_students( client, guild )
+# Function: process_new_students()
 async def process_new_students( client, guild, welcome_channel,
-                                                            bot_log_channel ):
-
-    # initialize variables
-    guest_list = get_guest_list( CSV_FILE )
+                                                bot_log_channel,
+                                                guest_list):
+    desc = "Processing Students"
     users_added = 0
     message_count = 0
-    delete_mentions = []
     role = get_role(guild, STUDENT_ROLE)
-
 
     # send to log channel that processing has started
     # embed_start_end_bot(menu, state, channel=None, users_added = 0, messages = 0):
-    embed = embed_start_end_bot( 1, "Started", channel=welcome_channel )
+    embed = embed_start_bot( desc, welcome_channel )
     await bot_log_channel.send( embed=embed )
 
     # print scanning has started
@@ -206,19 +218,22 @@ async def process_new_students( client, guild, welcome_channel,
             # Bot will ignore anybody above its permissions
         if guild.me.top_role >= message.author.top_role:
 
-            # check if messages sent by bot
-            if (message.author == client.user):
+            # check if messages sent by bot and has a mention in it
+            if (message.author == client.user) and (message.mentions):
 
-                # iterate through all items in delete_mentions
-                for user_obj in delete_mentions:
+                # Loop through all mentioned users in the message
+                for mentioned_user in message.mentions:
 
-                    # check if user was mentioned in bot message
-                    if user_obj.mentioned_in(message):
+                    # Check if the mentioned user has the "STUDENT" role
+                    user = guild.get_member(mentioned_user.id)
 
-                        # delete message
+                    # Check if they have any role
+                    if (len(user.roles) > 1):
+
+                        # Delete the message
                         await message.delete()
 
-                        # break out since only one member can be mentioned
+                        # break out, no more mentions
                         break
 
             # message not sent by bot
@@ -229,23 +244,29 @@ async def process_new_students( client, guild, welcome_channel,
 
                     # grab user object and nick name str
                     user = message.author
+
+                    # Grab nick name
+                        # guest_list is currently lowercase
+                        # Theoretically we could format the nick name
+                        # correctly and just use students full
+                        # capitalized names in guest_list but I am not sure
                     nick_name = message.content.lower()
 
                     # Handle the messages, return the users added
-                    added_user = await add_student(guest_list, user, nick_name,
+                    added_user = await add_student( guest_list, user, nick_name,
                                                                     role, guild )
+
+                    # format name
+                    fname = format_nick_name(nick_name)
 
                     # check if user was added
                     if ( added_user ):
 
                         # send success message
-                        embed = embed_successful_assign(nick_name, user, role)
+                        embed = embed_successful_assign(fname, user, role)
 
                         # send success embed to bot channel
                         await bot_log_channel.send(embed=embed)
-
-                        # add user to delete_mentions
-                        delete_mentions.append(message.author)
 
                         users_added += 1
 
@@ -255,7 +276,7 @@ async def process_new_students( client, guild, welcome_channel,
                         if (role not in user.roles):
 
                             # create error embed
-                            embed = embed_user_error(nick_name)
+                            embed = embed_user_error(fname)
 
                             # send error embed for user to see
                             await message.channel.send(message.author.mention,
@@ -284,28 +305,31 @@ async def process_new_students( client, guild, welcome_channel,
 
                 # embed exception if anything else goes awry
                 except Exception as e:
-                    embed = embed_abrupt_end( "Error", users_added,
-                                                            str(e) )
+                    embed = embed_abrupt_end( "Error", users_added, str(e) )
                     await bot_log_channel.send( embed=embed )
                     raise e
                     await client.close()
-
+        else:
+            embed = embed_unsuccessful_assign( message.author,
+                                                name=message.content,
+                                                e= "User is an admin, bot " +
+                                                "cannot assign roles to them" )
+            await bot_log_channel.send( embed=embed )
     # Print a log message once all the messages have been
         # processed
     print_formatted(f"End: " +
         f"Processed {message_count} messages in '{guild.name}'")
 
-    embed = embed_start_end_bot( 1, "Finished", welcome_channel,
-                                                users_added,
-                                                message_count )
+    embed = embed_end_bot(desc, welcome_channel, users_added, message_count )
 
     await bot_log_channel.send( embed=embed )
 
 # Function: rerole_former_students( client, guild, bot_log_channel )
 async def rerole_former_students( client, guild, bot_log_channel ):
 
+    desc = "Re-roling Former Students"
     # send message to bot channel
-    embed = embed_start_end_bot( 2, "Started")
+    embed = embed_start_bot(desc)
     await bot_log_channel.send( embed=embed )
 
     users_reassigned = 0
@@ -338,7 +362,7 @@ async def rerole_former_students( client, guild, bot_log_channel ):
             # increase users assigned
             users_reassigned += 1
 
-    embed = embed_start_end_bot( 2, "Finished", users_added = users_reassigned )
+    embed = embed_end_bot(desc, users_added = users_reassigned )
     await bot_log_channel.send( embed=embed )
 
 # Function: clean_welcome ( client, guild )
@@ -347,8 +371,9 @@ async def clean_channel( channel , bot_log_channel):
 
     # declare Variables
     messages = 0
+    desc = "Clearing Channel"
 
-    embed = embed_start_end_bot( 3, "Started", channel)
+    embed = embed_start_bot( desc, channel )
     await bot_log_channel.send( embed=embed )
 
     # print scanning has started
@@ -369,10 +394,10 @@ async def clean_channel( channel , bot_log_channel):
 
         messages += 1
 
-    embed = embed_start_end_bot( 3, "Finished", channel, messages = messages)
+    embed = embed_end_bot( desc, channel = channel, messages = messages)
     await bot_log_channel.send( embed=embed )
 
-
     return messages
+
 # Run bot
 run_discord_bot()

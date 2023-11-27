@@ -64,43 +64,33 @@ def embed_leave_message(current_semester):
     return universal_embed(title, title_desc, color, fields, timestamp=True)
 
 
-# embed for signaling the start/end of the bot
-def embed_start_end_bot(menu, state, channel=None, users_added = 0, messages = 0):
+def embed_start_bot(message=None, channel=None):
+
+    fields = []
+    color = NEUTRAL_COLOR
+    title = "Started " + message
+    title_desc = ''
+
+    if channel:
+        title_desc += f'<#{channel.id}>'
+
+    timestamp = datetime.now()
+
+    return universal_embed(title, title_desc, color, fields, footer=timestamp)
+
+def embed_end_bot(message=None, channel=None, users_added = None, messages = None):
 
     fields = []
     color = NEUTRAL_COLOR
     timestamp = datetime.now()
+    title_desc = ''
 
-    if menu == 1:
+    title = "Finished " + message
 
-        title = f"{state} processing chat log."
-        title_desc = f'<#{channel.id}>'
-
-        if (state == "Finished"):
-
-            fields.insert( -1, (f"Students added in batch: {users_added}","") )
-
-        if (messages):
-
-             fields.insert( -1, (f"Messages Processed: {messages}", "") )
-
-    if menu == 2:
-
-        title = f"{state} re-roling students."
-        title_desc = ''
-
-        if (state == "Finished"):
-            fields.insert( -1, (f"Students re-assigned: {users_added}","") )
-
-    if menu == 3:
-
-        title = f"{state} clearing messages."
-        title_desc = f'<#{channel.id}>'
-
-        if (state == "Finished"):
-
-             fields.insert( -1, (f"Messages Deleted: {messages}", "") )
-
+    if users_added:
+        fields.insert( -1, (f"Students Processed: {users_added}","") )
+    if messages:
+        fields.insert( -1, (f"Messages Processed: {messages}", "") )
 
     return universal_embed(title, title_desc, color, fields, footer=timestamp)
 
