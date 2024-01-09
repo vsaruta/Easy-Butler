@@ -78,7 +78,7 @@ def embed_start_bot(message=None, channel=None):
 
     return universal_embed(title, title_desc, color, fields, footer=timestamp)
 
-def embed_end_bot(message=None, channel=None, users_added = None, messages = None):
+def embed_end_bot(message, channel=None, users_added = None, messages = None):
 
     fields = []
     color = NEUTRAL_COLOR
@@ -87,9 +87,9 @@ def embed_end_bot(message=None, channel=None, users_added = None, messages = Non
 
     title = "Finished " + message
 
-    if users_added:
-        fields.insert( -1, (f"Students Processed: {users_added}","") )
-    if messages:
+    if users_added != None:
+        fields.insert( -1, (f"Students Added: {users_added}","") )
+    if messages != None:
         fields.insert( -1, (f"Messages Processed: {messages}", "") )
 
     return universal_embed(title, title_desc, color, fields, footer=timestamp)

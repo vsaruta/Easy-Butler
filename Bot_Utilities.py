@@ -135,8 +135,8 @@ async def add_student(guest_list, user, nick_name, role, guild):
 
             return True
 
-        # nick_name is not in student file
-        return False
+    # nick_name is not in student file
+    return False
 
 '''
 Function to check if client can manage role
@@ -163,6 +163,7 @@ def can_manage_role(client, guild, target_role_name):
 
             return True
 
+        print_formatted(f"Bot unable to manage <{target_role_name}>.", 1)
         return False
 
     print_formatted(f"<{target_role_name}> does not exist!", 1)
@@ -242,8 +243,9 @@ def display_menu():
     print_formatted("[1] Process New Students with .csv")
     print_formatted("[2] Process New Students with Canvas")
     print_formatted("[3] Re-role Former Students")
-    print_formatted("[4] Clear *All* Messages in Welcome Channel")
-    print_formatted("[5] Quit")
+    print_formatted("[4] Clear Failed Messages in Welcome Channel")
+    print_formatted("[5] Clear *All* Messages in Welcome Channel")
+    print_formatted("[6] Quit")
 
 
 '''
@@ -423,15 +425,35 @@ def get_lower_guest_list(guest_list):
 Function to retrieve a Discord role by its name within a given guild (server).
 
 Parameters:
+    guild: object
+        - The Discord server with roles
+
     role_name: str
         - The name of the role to retrieve
 
 Returns:
-    role: object
-        - The Discord role object with the specified name, or None if not found
+    - The Discord role object
 '''
 def get_role( guild, role_name):
+
     return discord.utils.get(guild.roles, name=role_name)
+
+'''
+Function to check if a member has a specified role
+
+Parameters:
+    member: object
+        - The user being checked for roles
+
+    role_name: object
+        - The role to look up
+
+Returns:
+    Bool
+'''
+def has_role(user, role):
+
+    return role in user.roles
 
 '''
 Function to log a new student's information to a file.

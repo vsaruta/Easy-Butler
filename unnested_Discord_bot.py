@@ -194,6 +194,9 @@ async def process_new_students( client, guild, welcome_channel, bot_log_channel,
                 # grab user object and nick name str
                 user = message.author
 
+                # Grab nick name
+                nick_name = message.content.lower()
+
                 # Try adding user
                 added_user = await add_student( guest_list, user, nick_name,
                                                                 role, guild )
