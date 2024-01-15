@@ -220,13 +220,13 @@ def csv_guest_list(filename):
         reader = csv.DictReader(csvfile)
         for row in reader:
             name = row["name"]
-<<<<<<< Updated upstream
+
             # Convert the name to lowercase and add it to the guest list
             guest_list.append( name.strip().lower() )
-=======
+
             section = row["lab section"]
-            guest_list.append( name.strip.lower() )
->>>>>>> Stashed changes
+            
+            guest_list.append( name.strip().lower() )
 
     return guest_list
 
