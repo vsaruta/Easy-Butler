@@ -225,7 +225,7 @@ def csv_guest_list(filename):
             guest_list.append( name.strip().lower() )
 
             section = row["lab section"]
-            
+
             guest_list.append( name.strip().lower() )
 
     return guest_list

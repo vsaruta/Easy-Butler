@@ -164,23 +164,22 @@ def run_discord_bot():
                         # 2) If yes, go through users
                         for user in guild.members:
 
-                            print(user)
-
                             # if user has student role and < 3 roles
                             if student_role in user.roles and len(user.roles) < 3:
 
                                 # grab student name
-                                nick_name = user.nick
+                                nick_name = user.nick.lower()
 
                                 # find name in section_list
                                 for name, section in section_list:
 
                                     if nick_name == name:
+
                                         # grab appropriate section (1,2,3 etc) role
                                         role = get_role( guild, section )
 
-                                        # assign role
-                                        assign_role(role, user, bot_log_channel)
+                                        await user.add_roles(role)
+                                        print_formatted(f"( +R ) Assigned '{section}' role to {user.name}\n", 1)
 
 
             # server name does not include correct naming
