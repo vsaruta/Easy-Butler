@@ -52,14 +52,16 @@ def embed_client_error(user, type):
     title_desc = ""
     color = ERROR_COLOR
     timestamp = datetime.now()
+    fields = []
 
     return universal_embed(title, title_desc, color, fields, footer=timestamp)
 
 def embed_leave_message(current_semester):
 
     title = "Left Server - Old Semester"
-    title_desc = f"Leaving all servers without {current_semester}' in its name."
+    title_desc = f"Leaving all servers without '{current_semester}' in its name."
     color = NEUTRAL_COLOR
+    fields = []
 
     return universal_embed(title, title_desc, color, fields, timestamp=True)
 

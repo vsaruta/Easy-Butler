@@ -37,7 +37,7 @@ def run_discord_bot():
         except ValueError:
             menu_choice = -1
 
-    if (menu_choice == 4):
+    if (menu_choice == 5):
         print_formatted( "Ended program." )
         quit()
 
@@ -398,6 +398,3 @@ async def clean_channel( channel , bot_log_channel):
     await bot_log_channel.send( embed=embed )
 
     return messages
-
-# Run bot
-run_discord_bot()
