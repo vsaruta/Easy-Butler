@@ -29,7 +29,7 @@ def run_discord_bot():
     # ask for menu choice
     display_menu()
 
-    while ( menu_choice < 0 ) or ( menu_choice > 5 ):
+    while ( menu_choice < 0 ) or ( menu_choice > 6 ):
 
         try:
             menu_choice = int(input("\n\tChoose Program: "))
@@ -37,7 +37,7 @@ def run_discord_bot():
         except ValueError:
             menu_choice = -1
 
-    if (menu_choice == 5):
+    if (menu_choice == 6):
         print_formatted( "Ended program." )
         quit()
 
@@ -154,6 +154,35 @@ def run_discord_bot():
                     m = f"Messages deleted: {messages}"
                     print_formatted(m, 1)
 
+                elif menu_choice == 5:
+
+                    student_role = get_role(guild, STUDENT_ROLE)
+                    section_list = get_section_list(CSV_FILE)
+
+                    if section_list:
+
+                        # 2) If yes, go through users
+                        for user in guild.members:
+
+                            print(user)
+
+                            # if user has student role and < 3 roles
+                            if student_role in user.roles and len(user.roles) < 3:
+
+                                # grab student name
+                                nick_name = user.nick
+
+                                # find name in section_list
+                                for name, section in section_list:
+
+                                    if nick_name == name:
+                                        # grab appropriate section (1,2,3 etc) role
+                                        role = get_role( guild, section )
+
+                                        # assign role
+                                        assign_role(role, user, bot_log_channel)
+
+
             # server name does not include correct naming
             else:
                 # print to console
@@ -188,7 +217,7 @@ def run_discord_bot():
     # run client
     print(secret.TOKEN)
     client.run( secret.TOKEN )
-    
+
 
 # Function: process_new_students()
 async def process_new_students( client, guild, welcome_channel,
@@ -253,9 +282,6 @@ async def process_new_students( client, guild, welcome_channel,
                         # correctly and just use students full
                         # capitalized names in guest_list but I am not sure
                     nick_name = message.content.lower()
-
-                    print(nick_name)
-                    print(guest_list)
 
                     # Handle the messages, return the users added
                     added_user = await add_student( guest_list, user, nick_name,

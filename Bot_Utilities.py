@@ -114,24 +114,16 @@ async def add_student(guest_list, user, nick_name, role, guild):
     # Check if user only has @everyone role
     if (len(user.roles) == 1):
 
-        # check if in guest list
         if nick_name in guest_list:
 
-            # format nickname nicely
-            #nick_name = format_nick_name(nick_name)
             nick_name = format_nick_name(nick_name)
+            student_role = get_role(guild, STUDENT_ROLE)
 
             await user.edit(nick=nick_name)
             print_formatted(f"( +N ) Assigned name '{nick_name}' to {user.name}", 1)
 
-            # grab student role
-            role = get_role(guild, STUDENT_ROLE)
-
-            await user.add_roles(role)
+            await user.add_roles(student_role)
             print_formatted(f"( +R ) Assigned '{STUDENT_ROLE}' role to {user.name}\n", 1)
-
-            # log to file
-            #log_to_file(LOG_FILE, nick_name, user, guild)
 
             return True
 
@@ -216,7 +208,7 @@ Parameters:
 
 Returns:
     guest_list: list
-        - A list of guest names (in lowercase)
+        - A list of names (in lowercase)
 '''
 def csv_guest_list(filename):
 
@@ -228,8 +220,13 @@ def csv_guest_list(filename):
         reader = csv.DictReader(csvfile)
         for row in reader:
             name = row["name"]
+<<<<<<< Updated upstream
             # Convert the name to lowercase and add it to the guest list
             guest_list.append( name.strip().lower() )
+=======
+            section = row["lab section"]
+            guest_list.append( name.strip.lower() )
+>>>>>>> Stashed changes
 
     return guest_list
 
@@ -243,7 +240,8 @@ def display_menu():
     print_formatted("[2] Process New Students with Canvas")
     print_formatted("[3] Re-role Former Students")
     print_formatted("[4] Clear *All* Messages in Welcome Channel")
-    print_formatted("[5] Quit")
+    print_formatted("[5] Assign lab roles to all students")
+    print_formatted("[6] Quit")
 
 
 '''
@@ -319,6 +317,33 @@ def get_channel_object(guild, channel_name):
     # get welcome channel
     return discord.utils.get(guild.channels, name=channel_name)
 
+
+def get_section_list(filename):
+
+    header = "lab section"
+    section_list = []
+
+    # 1) cehck if in same csv file "lab section" column exists
+    with open(filename, newline='') as csvfile:
+
+        reader = csv.DictReader(csvfile)
+
+        if header not in reader.fieldnames:
+
+            print("The 'lab section' column does not exist.")
+
+            return None
+
+        for row in reader:
+
+            name = row["name"]
+
+            section = row[header]
+
+            # create list of tuples with lab sections and names
+            section_list.append( (name.strip().lower(), section) )
+
+    return section_list
 '''
 Function to get the current semester as a string based on the current date.
 
