@@ -252,6 +252,9 @@ async def process_new_students( client, guild, welcome_channel,
                         # capitalized names in guest_list but I am not sure
                     nick_name = message.content.lower()
 
+                    print(nick_name)
+                    print(guest_list)
+
                     # Handle the messages, return the users added
                     added_user = await add_student( guest_list, user, nick_name,
                                                                     role, guild )

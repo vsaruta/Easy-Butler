@@ -1,5 +1,5 @@
 # Customization :)
-CSV_FILE = "fall_2023_cs126_names.csv"
+CSV_FILE = "cs126_names.csv"
 LOG_FILE = "discord_log.txt"
 STUDENT_ROLE = "Students"
 FORMER_ROLE = "Former Student"
