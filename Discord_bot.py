@@ -186,7 +186,9 @@ def run_discord_bot():
         await client.close()
 
     # run client
+    print(secret.TOKEN)
     client.run( secret.TOKEN )
+    
 
 # Function: process_new_students()
 async def process_new_students( client, guild, welcome_channel,
