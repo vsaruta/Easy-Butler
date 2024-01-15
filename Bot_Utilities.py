@@ -229,7 +229,7 @@ def csv_guest_list(filename):
         for row in reader:
             name = row["name"]
             # Convert the name to lowercase and add it to the guest list
-            guest_list.append(name.lower)
+            guest_list.append(name.lower())
 
     return guest_list
 
