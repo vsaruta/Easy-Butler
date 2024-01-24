@@ -26,6 +26,7 @@ def run_discord_bot():
 
     print()
     print(LONG_LINE)
+    
     # ask for menu choice
     display_menu()
 
@@ -269,82 +270,59 @@ async def process_new_students( client, guild, welcome_channel,
             # message not sent by bot
             else:
 
-                # try to add user
-                try:
+                # grab user object and nick name str
+                user = message.author
 
-                    # grab user object and nick name str
-                    user = message.author
+                # Grab nick name
+                    # guest_list is currently lowercase
+                    # Theoretically we could format the nick name
+                    # correctly and just use students full
+                    # capitalized names in guest_list but I am not sure
+                nick_name = message.content.lower()
 
-                    # Grab nick name
-                        # guest_list is currently lowercase
-                        # Theoretically we could format the nick name
-                        # correctly and just use students full
-                        # capitalized names in guest_list but I am not sure
-                    nick_name = message.content.lower()
+                # Handle the messages, return the users added
+                added_user = await add_student( guest_list, user, nick_name,
+                                                                role, guild )
 
-                    # Handle the messages, return the users added
-                    added_user = await add_student( guest_list, user, nick_name,
-                                                                    role, guild )
+                # format name
+                fname = format_nick_name(nick_name)
 
-                    # format name
-                    fname = format_nick_name(nick_name)
+                # check if user was added
+                if ( added_user ):
 
-                    # check if user was added
-                    if ( added_user ):
+                    # send success message
+                    embed = embed_successful_assign(fname, user, role)
 
-                        # send success message
-                        embed = embed_successful_assign(fname, user, role)
+                    # send success embed to bot channel
+                    await bot_log_channel.send(embed=embed)
 
-                        # send success embed to bot channel
+                    users_added += 1
+
+                else:
+                    # catches if student has been added but they
+                    # said invalid stuff after added
+                    if (role not in user.roles):
+
+                        # create error embed
+                        embed = embed_user_error(fname)
+
+                        # send error embed for user to see
+                        await message.channel.send(message.author.mention,
+                                                    embed=embed)
+
+                        # create error embed
+                        embed = embed_unsuccessful_assign(user,
+                                                        name=nick_name,
+                                                        e="Nickname not in guest list")
+                        # send error embed for log keeping
                         await bot_log_channel.send(embed=embed)
 
-                        users_added += 1
+                # delete user message
+                await message.delete()
 
-                    else:
-                        # catches if student has been added but they
-                        # said invalid stuff after added
-                        if (role not in user.roles):
+                # wait for wait limit, if thats an issue.
+                time.sleep( WAIT_FOR_RATE_LIMIT )
 
-                            # create error embed
-                            embed = embed_user_error(fname)
-
-                            # send error embed for user to see
-                            await message.channel.send(message.author.mention,
-                                                        embed=embed)
-
-                            # create error embed
-                            embed = embed_unsuccessful_assign(user,
-                                                            name=nick_name,
-                                                            e="Nickname not in guest list")
-                            # send error embed for log keeping
-                            await bot_log_channel.send(embed=embed)
-
-                    # delete user message
-                    await message.delete()
-
-                    # wait for wait limit, if thats an issue.
-                    time.sleep( WAIT_FOR_RATE_LIMIT )
-
-                # embed for KeyboardInterrupt
-                except KeyboardInterrupt as e:
-                    print_formatted(f"End search for '{guild.name}'")
-                    embed = embed_abrupt_end( "KeyboardInterrupt",
-                                                        users_added )
-                    await bot_log_channel.send( embed=embed )
-                    await client.close()
-
-                # embed exception if anything else goes awry
-                except Exception as e:
-                    embed = embed_abrupt_end( "Error", users_added, str(e) )
-                    await bot_log_channel.send( embed=embed )
-                    raise e
-                    await client.close()
-        else:
-            embed = embed_unsuccessful_assign( message.author,
-                                                name=message.content,
-                                                e= "User is an admin, bot " +
-                                                "cannot assign roles to them" )
-            await bot_log_channel.send( embed=embed )
     # Print a log message once all the messages have been
         # processed
     print_formatted(f"End: " +
