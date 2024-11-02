@@ -1,9 +1,15 @@
 import discord
-from datetime import datetime
 import secret as sc
 import config as cfg
+from datetime import datetime
+from classes.Embed import Embed 
+from classes.Canvas import Canvas
 
 class Bot:
+
+    '''
+    PUBLIC FUNCTIONS
+    '''
 
     def handle_msg( self, msg ):
 
@@ -15,10 +21,8 @@ class Bot:
         command = argv[0].lower()
 
         # initialize embed
-        #embed = self.embed_handler.initialize_embed( "Title", "Desc", self.dft_color )
-        embed = discord.Embed(title="Tile", description="Desc", color=self.dft_color)
+        embed = self.embed.initialize_embed( "Title", "Desc", self.dft_color )
         embed.timestamp = datetime.now()
-        #embed.set_footer( text='\u200b',icon_url=self.client.user.avatar.url )
 
         # check if command is valid
         if command in self.commands.keys():
@@ -53,15 +57,27 @@ class Bot:
         # help command
         embed.title = f"{self.name} help!"
         desc = ""
+        is_admin = self._is_admin( msg.author )
 
+        # add in all items
         for key, val in self.commands.items():
 
-            embed.add_field(name=f"{key} - {val[1]}", value="", inline=False)
+            # admins see all commands, but if not admin, then just non-admin commands
+            if val[2] or is_admin:
+
+                # add a field
+                embed.add_field(name=f"{key} - {val[1]}", value="", inline=False)
+                
 
     def process_students(self, msg, embed):
-
         pass
 
+    def prune(self, msg, embed):
+        pass
+
+    '''
+    PRIVATE FUNCTIONS
+    '''
     def __init__(self, name, client, prefix, dft_color, TOKEN):
 
         # initialize important stuff
@@ -76,14 +92,24 @@ class Bot:
         self.ta_list    = cfg.ta_list
         self.owner      = cfg.owner
 
+        # establish other classes
+        self.embed      = Embed()
+        self.canvas     = Canvas()
+
+        # initialize all available commands for users to call
         self.commands = {   self.prefix + "help": ( self.help, # command to run
                                                     "List of commands", # help desc
                                                     False, # is admin-only command
                                                 ),
                             self.prefix + "process_students": (
                                                 self.process_students,
-                                                "Process students",
+                                                "Process students - NOT IMPLEMENTED",
                                                 True, # is admin-only command
+                                                ),
+                            self.prefix + "prune": (
+                                                self.prune,
+                                                "Leave servers without [SEASON] [YEAR] - NOT IMPLEMENTED",
+                                                True # is admin-only command
                             )
                         }
 
