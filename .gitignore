@@ -1,8 +1,2 @@
-*.csv
-discord_log.txt
-secret.py
-canvas_request_test.py
-bot_backup.py
-canvas_secret.py
-other_file.csv
-Canvas
+*/secret.py
+*__pycache__
