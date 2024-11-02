@@ -26,7 +26,7 @@ def run_discord_bot():
 
     print()
     print(LONG_LINE)
-    
+
     # ask for menu choice
     display_menu()
 
@@ -81,6 +81,7 @@ def run_discord_bot():
                     if menu_choice == 1:
                         guest_list = csv_guest_list( CSV_FILE )
                     else:
+
                         guest_list = canv_guest_list( CANVAS_TOKEN )
 
                     # check if both bot channel + welcome channel
@@ -274,10 +275,6 @@ async def process_new_students( client, guild, welcome_channel,
                 user = message.author
 
                 # Grab nick name
-                    # guest_list is currently lowercase
-                    # Theoretically we could format the nick name
-                    # correctly and just use students full
-                    # capitalized names in guest_list but I am not sure
                 nick_name = message.content.lower()
 
                 # Handle the messages, return the users added
