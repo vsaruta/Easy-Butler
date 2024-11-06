@@ -1,5 +1,5 @@
 import requests
-#from secret import API_KEY
+from secret import API_KEY
 
 class Canvas:
 
