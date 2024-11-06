@@ -6,8 +6,8 @@ class Canvas:
     def __init__(self) -> None:
     
         #initialize API Key
-        #self.API_KEY = API_KEY 
-        self.API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV" 
+        self.API_KEY = API_KEY 
+        #self.API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV" 
 
         # set up per-page
         self.per_page = 100
