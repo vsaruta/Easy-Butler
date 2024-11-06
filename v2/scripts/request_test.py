@@ -1,7 +1,6 @@
 import requests
 
 API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV"
-# Replace with your Canvas API URL and API key
 CANVAS_API_URL = "https://canvas.nau.edu/api/v1/courses"
 
 def get_courses():

@@ -16,7 +16,6 @@ def run_discord_bot():
     dft_color = cfg.dft_color
     token     = sc.TOKEN
 
-
     # initialize bot
     bot = Bot(name, client, prefix, dft_color, token)
 
@@ -43,7 +42,7 @@ def run_discord_bot():
         if msg.content.startswith( bot.prefix ):
             
             # handle the message, grab the embed
-            embed = bot.handle_msg( msg )
+            embed = await bot.handle_msg( msg )
 
             # send the embed
             async with msg.channel.typing(): 

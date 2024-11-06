@@ -8,6 +8,7 @@ name="LunaBot"
 prefix="bot."
 welcome_channel = "welcome"
 log_channel = "bot_logs"
+student_role = "Students"
 dft_color=0x6495ED
 
 # lists

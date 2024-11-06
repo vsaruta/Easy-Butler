@@ -20,10 +20,29 @@ class Semester:
 
         return "1" + self.year[2:] + szn_dict[szn]
     
+    def extract_sec_pattern(self, text):
+        # Regular expression to match SEC00 followed by any number of digits
+        pattern = r"SEC00\d+"
+        matches = re.findall(pattern, text)
+        return matches
+
     def get_classcode(self, name):
         # Extracts the class code and formats it with a hyphen (e.g., "CS-126")
         match = re.search(r"\b([A-Z]{2,})(\d{3})\b", name)
         return f"{match.group(1)}-{match.group(2)}" if match else None
+
+    def get_lab_sections(self, mystr, my_courses):
+
+        sections = []
+
+        for course in my_courses:
+            name = course['name']
+
+            if mystr in name:
+                section = name[-3:]
+                sections.append(section)
+
+        return sections
 
     def get_season(self, name):
         # Extracts the season (e.g., "Fall")
@@ -82,6 +101,10 @@ class Semester:
         current_semester_str = self.get_current_semester_string()
         return f"{self.season} {self.year}" == current_semester_str
     
+    def set_channels( self, welcome_channel, log_channel):
+        self.welcome_channel_obj = welcome_channel
+        self.log_channel_obj = log_channel
+        
     def set_courses(self, my_courses):
 
         # set courses
@@ -94,6 +117,7 @@ class Semester:
         # get lab ids
         str = f"{self.classcode}L ({self.term}"
         self.lab_ids   = self.get_course_ids(str)  # list of lab ids
+        self.lab_sections =  self.get_lab_sections(str, self.my_courses) # list of lab names
 
     def __init__(self, guild) -> None:
 
@@ -107,12 +131,13 @@ class Semester:
 
         # set class IDs
         self.my_courses = None
-        self.combo_ids = None
-        self.lab_ids   = None
+        self.combo_ids  = None
+        self.lab_ids    = None
+        self.lab_sections = None
 
         # set discord channels
-        self.welcome_channel = None
-        self.log_channel     = None
+        self.welcome_channel_obj = None
+        self.log_channel_obj     = None
 
         #self._display_guild()
 
