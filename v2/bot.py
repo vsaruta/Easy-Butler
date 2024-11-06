@@ -16,16 +16,20 @@ def run_discord_bot():
     dft_color = cfg.dft_color
     token     = sc.TOKEN
 
+
     # initialize bot
     bot = Bot(name, client, prefix, dft_color, token)
 
+    @client.event
+    async def on_guild_join(guild): # check if we need to update bot on a new join
+        await bot.initialize_guilds()
 
     # Show bot logged on successfully
     @client.event
     async def on_ready():
-        await client.change_presence(activity=discord.Game(name="New Bot!"))
-        print(f'{client.user} is now running!')
-
+        await bot.initialize_guilds()
+        #await client.change_presence(activity=discord.Game(name="New Bot!"))
+        print(f"{bot.name} is now running!")
 
     # Message Handler
     @client.event
@@ -35,6 +39,7 @@ def run_discord_bot():
         if msg.author == client.user or msg.attachments:
             return 0 # skip
         
+        # handle any commands
         if msg.content.startswith( bot.prefix ):
             
             # handle the message, grab the embed

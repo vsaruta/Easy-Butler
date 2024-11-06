@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../../DNU-Servant"
+		},
+		{
+			"path": "../../../axeBot"
 		}
 	],
 	"settings": {}

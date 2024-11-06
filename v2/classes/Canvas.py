@@ -1,17 +1,17 @@
 import requests
-from secret import API_KEY
+#from secret import API_KEY
 
 class Canvas:
 
     def __init__(self) -> None:
     
         #initialize API Key
-        self.API_KEY = API_KEY 
-        #self.API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV" 
+        #self.API_KEY = API_KEY 
+        self.API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV" 
 
         # set up per-page
-        self.per_page = 1000
-        self.page = 1 
+        self.per_page = 100
+        self.page = 1
 
         # initialize general headers and params
         self.base_url = "https://canvas.nau.edu/api/v1/"
@@ -21,11 +21,7 @@ class Canvas:
             "page": self.page
         }
 
-    def get_student_names(self):
-
-        pass
-
-    def get_all_courses(self):
+    def get_my_courses(self):
 
         # create course list 
         courses = [] 
@@ -42,8 +38,39 @@ class Canvas:
             courses = resp.json()
 
         return courses
+     
+    def retrieve_students(self, course_id):
         
+        # initialize variables 
+        url = self.base_url + f'/courses/{course_id}/students' 
+        students = []
+        not_done = True
 
+        # loop
+        while not_done:
+
+            # make request
+            resp = self._get(url)
+
+            # append to students
+            students.append(resp.json())
+
+            # get next url
+            if 'next' in resp.links.keys():
+
+                url = resp.request.links['next']['href']
+            
+            # nope we are good!
+            else:
+
+                not_done = False
+
+        return students
+    
+    def retrieve_tas(self, course_id):
+        ta_list = []
+        return ta_list
+    
     def _get(self, url, headers=None, params=None):
         
         # set headers
@@ -63,16 +90,8 @@ class Canvas:
 def _main():
 
     canvas = Canvas()
-
-    courses = canvas.get_all_courses()
-
-    if courses:
-
-        print("Your Courses:")
-
-        for course in courses:
-            print(f"- {course['name']} (ID: {course['id']})")
-    else:
-        print("No courses found.")
+    # combo_class = 28980
+    # result = canvas.get(combo_class)
+    # print(result)
 
 #_main()
