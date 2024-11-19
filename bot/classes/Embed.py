@@ -5,7 +5,12 @@ class Embed:
     def __init__(self) -> None:
         pass
     
-    def initialize_embed(self, title, desc, color):
+    def clear_embed(embed):
+
+        embed.title = ""
+        embed.desc  = ""
+        
+    def initialize_embed(self, title="", desc="", color=0xffffff):
         
         return discord.Embed(title=title, description=desc, color=color)
     

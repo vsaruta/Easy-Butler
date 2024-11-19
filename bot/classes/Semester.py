@@ -101,9 +101,18 @@ class Semester:
         current_semester_str = self.get_current_semester_string()
         return f"{self.season} {self.year}" == current_semester_str
     
-    def set_channels( self, welcome_channel, log_channel):
-        self.welcome_channel_obj = welcome_channel
-        self.log_channel_obj = log_channel
+    def set_channels( self, welcome_channel, added_students_channel, 
+                                             admin_channel,
+                                             admin_log_channel,
+                                             student_cmds_channel,
+                                             student_cmds_log_channel):
+        
+        self.welcome_channel_obj          = welcome_channel
+        self.added_students_channel_obj   = added_students_channel
+        self.admin_channel_obj            = admin_channel
+        self.admin_log_channel_obj        = admin_log_channel
+        self.student_cmds_channel_obj     = student_cmds_channel
+        self.student_cmds_log_channel_obj = student_cmds_log_channel
         
     def set_courses(self, my_courses):
 
@@ -136,12 +145,17 @@ class Semester:
         self.lab_sections = None
 
         # set discord channels
-        self.welcome_channel_obj = None
-        self.log_channel_obj     = None
+        self.welcome_channel_obj          = None
+        self.added_students_channel_obj   = None
+        self.admin_channel_obj            = None
+        self.admin_log_channel_obj        = None
+        self.student_cmds_channel_obj     = None
+        self.student_cmds_log_channel_obj = None
 
         # log - student adding success channel
         # log - failure adding channel
         # 
+        self.student_role_obj  = None
 
         #self._display_guild()
 

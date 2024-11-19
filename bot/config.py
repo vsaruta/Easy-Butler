@@ -6,11 +6,17 @@ owner=claire
 # strings
 name="LunaBot"
 prefix="luna."
-welcome_channel = "welcome"
-log_channel = "bot_logs"
+# welcome_channel = "welcome"
+# log_channel = "bot_logs"
 student_role = "Students"
+# all channel strings
+welcome_channel_str          = "welcome"
+added_students_channel_str   = "processed-students"
+admin_channel_str            = "admin-commands"
+admin_log_channel_str        = "admin-logs"
+student_cmds_channel_str     = "student-commands"
+student_cmds_log_channel_str = "student-command-logs"
 dft_color=0x6495ED
-
 # lists
 admin_list=[owner,vova]
 
