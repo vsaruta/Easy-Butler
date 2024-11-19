@@ -1,4 +1,5 @@
 import discord
+from datetime import datetime
 
 class Embed:
 
@@ -9,10 +10,11 @@ class Embed:
 
         embed.title = ""
         embed.desc  = ""
-        
+
     def initialize_embed(self, title="", desc="", color=0xffffff):
-        
-        return discord.Embed(title=title, description=desc, color=color)
+        embed = discord.Embed(title=title, description=desc, color=color)
+        embed.timestamp = datetime.now()
+        return embed
     
     def added_member( self, embed, author, name, integration_id, lab_section ):
 

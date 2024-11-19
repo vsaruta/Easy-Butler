@@ -6,7 +6,6 @@ from classes.Embed import Embed
 from classes.Canvas import Canvas
 from classes.Semester import Semester
 
-
 class Bot:
 
     '''
@@ -31,8 +30,7 @@ class Bot:
         command = argv[0].lower()
 
         # initialize embed
-        embed = self.embed.initialize_embed( "Title", "Desc", self.dft_color )
-        embed.timestamp = datetime.now()
+        embed = self.embed.initialize_embed( )
 
         # check if command is valid
         if command in self.commands.keys():
@@ -445,7 +443,6 @@ class Bot:
         self.prefix    = prefix
         self.token     = TOKEN
         
-
         # initialize additional file variables
         self.invite_link = sc.invite_link
         self.admin_list = cfg.admin_list
