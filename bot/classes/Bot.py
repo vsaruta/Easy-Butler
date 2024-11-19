@@ -202,16 +202,6 @@ class Bot:
         student_name = 'name'
         index = 0
         processed = 0
-        required_channels = self.required_channels # placeholder
-        required_roles = self.required_roles + self.current_semester.lab_sections 
-
-        # validate the channels
-        if not self.validate_channels( embed=embed, channel_names=required_channels ):
-            return embed
-        
-        # validate the roles
-        if not self.validate_roles(embed=embed, role_names=required_roles):
-            return embed
         
         # grab student lists for main class, really it might be more than 1 class
         for course_id in self.current_semester.combo_ids:
@@ -263,8 +253,7 @@ class Bot:
                 # update their lab
                 student_dict[ integration_id ]["lab_id"] = course_id
                 student_dict[ integration_id ]["lab_section"] = lab_section
-                student_dict[ integration_id ]["lab_role"] = self.get_role_obj( command.guild, 
-                                                                                     f"Lab {lab_section}")
+                student_dict[ integration_id ]["lab_role"] = self.get_role_obj( f"Lab {lab_section}")
 
         # loop through message history
         async for msg in self.current_semester.welcome_channel_obj.history():
@@ -355,8 +344,7 @@ class Bot:
                 # update their lab
                 student_dict[ integration_id ]["lab_id"] = course_id
                 student_dict[ integration_id ]["lab_section"] = lab_section
-                student_dict[ integration_id ]["lab_role"] = self.get_role_obj( msg.guild, 
-                                                                                     f"Lab {lab_section}")
+                student_dict[ integration_id ]["lab_role"] = self.get_role_obj( f"Lab {lab_section}")
             
 
         # student hasnt been processed yet

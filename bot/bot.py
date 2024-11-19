@@ -48,7 +48,7 @@ def run_discord_bot():
         if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
 
             # handle student
-            embed = bot.process_welcome_msg(msg)
+            embed = await bot.process_welcome_msg(msg)
 
             # send the embed
             async with msg.channel.typing(): 
