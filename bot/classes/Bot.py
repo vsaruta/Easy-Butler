@@ -119,6 +119,9 @@ class Bot:
 
         # initialize variables 
         student_role_obj = self.get_role_obj( command.guild, self.student_role_str )
+
+
+        # 
         student_dict = {}
         student_key = 'integration_id'
         student_name = 'name'
@@ -147,7 +150,7 @@ class Bot:
             embed.title = title
             return False
         
-        # grab student lists for main class
+        # grab student lists for main class, really it might be more than 1 class
         for course_id in self.current_semester.combo_ids:
 
             # get students in combo class
@@ -208,6 +211,7 @@ class Bot:
             # grab member
             member = await msg.guild.fetch_member(msg.author.id)
 
+            # student hasnt been processed yet
             if student_role_obj not in member.roles:
 
                 # grab the message 
@@ -262,11 +266,6 @@ class Bot:
     
         return True
 
-    async def prune(self, msg, embed):
-
-        # leave inactive serveres
-        pass
-
     '''
     PRIVATE FUNCTIONS
     '''
@@ -302,19 +301,32 @@ class Bot:
                             ),
                             self.prefix + "process_students": (
                                                 self.process_students,
-                                                "Process students - NOT IMPLEMENTED",
+                                                "Process students - Kind of implemented",
                                                 True, # is admin-only command
-                            ),
-                            self.prefix + "prune": (
-                                                self.prune,
-                                                "Leave servers without [SEASON] [YEAR] - NOT IMPLEMENTED",
-                                                True # is admin-only command
                             ),
                             self.prefix + "invite" : (
                                                 self.invite,
                                                 "Invite the bot to another server",
                                                 True # is admin-only command
+                            ),
+                            self.prefix + "restart":(
+                                                self.restart,
+                                                "Restart Bot",
+                                                True
+
+                            ),
+                            self.prefix + "set_canvas_key":(
+                                                self.set_api_key,
+                                                "Reset the Canvas API key",
+                                                True
+                            ),
+                            self.prefix + "update_lab":(
+                                                self.update_lab,
+                                                "Update a student's lab section",
+                                                True
                             )
+
+
                         }
 
     def _is_ta(self, author):

@@ -139,6 +139,10 @@ class Semester:
         self.welcome_channel_obj = None
         self.log_channel_obj     = None
 
+        # log - student adding success channel
+        # log - failure adding channel
+        # 
+
         #self._display_guild()
 
     def _display_guild(self):

@@ -5,7 +5,7 @@ owner=claire
 
 # strings
 name="LunaBot"
-prefix="bot."
+prefix="luna."
 welcome_channel = "welcome"
 log_channel = "bot_logs"
 student_role = "Students"

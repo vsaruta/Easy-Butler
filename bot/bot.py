@@ -38,6 +38,9 @@ def run_discord_bot():
         if msg.author == client.user or msg.attachments:
             return 0 # skip
         
+        # realtime - specifically check for welcome channel
+
+        # if in admin command channel 
         # handle any commands
         if msg.content.startswith( bot.prefix ):
             
