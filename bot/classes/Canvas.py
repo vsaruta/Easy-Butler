@@ -7,7 +7,6 @@ class Canvas:
     
         #initialize API Key
         self.API_KEY = API_KEY 
-        #self.API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV" 
 
         # set up per-page
         self.per_page = 100
@@ -67,10 +66,37 @@ class Canvas:
 
         return students
     
+    
     def retrieve_tas(self, course_id):
         ta_list = []
         return ta_list
     
+    def validate_api_key(self, key=None, verbose=False):
+
+        url = self.base_url + "users/self"
+
+        if key==None:
+            headers=self.base_headers
+        else:
+            headers  = { "Authorization": f"Bearer {key}" }
+        
+        resp = self._get(url, headers=headers)
+
+        if self._resp_200(resp):
+            return True
+        else:
+            if verbose:
+                print(f"Invalid API key. Status Code: {resp.status_code}")
+                print("Response:", resp.json())
+            return False
+
+    def set_api_key(self, api_key, verbose=False):
+        if self.validate_api_key(api_key, verbose):
+            self.API_KEY=api_key
+            return True
+        return False
+
+
     def _get(self, url, headers=None, params=None):
         
         # set headers

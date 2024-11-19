@@ -3,13 +3,16 @@ from datetime import datetime
 
 class Embed:
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, dft, success, error) -> None:
+        self.dft_color = dft
+        self.success_color = success
+        self.error_color = error
     
-    def clear_embed(embed):
+    def clear_embed(self, embed):
 
         embed.title = ""
         embed.desc  = ""
+        embed.color = self.dft_color
 
     def initialize_embed(self, title="", desc="", color=0xffffff):
         embed = discord.Embed(title=title, description=desc, color=color)
@@ -27,6 +30,7 @@ class Embed:
         embed.set_thumbnail(url=author.avatar_url)
         embed.title = "New Student Added"
         embed.description = desc
+        embed.color = self.success_color
 
 
     def member_not_found(self, embed, author, integration_id):
@@ -39,3 +43,4 @@ class Embed:
 
         embed.title = "School ID Not Found"
         embed.description = desc
+        embed.color = self.error_color

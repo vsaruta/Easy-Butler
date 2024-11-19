@@ -128,6 +128,27 @@ class Bot:
     async def invite(self, msg, embed):
         pass
 
+    async def set_api_key( self, msg, embed):
+
+        # grab key
+        key = msg.content.split(" ")[1]
+
+        # validate key, set if its good
+        if self.canvas.set_api_key(key, verbose=False):
+            
+            embed.title = "Key Success!"
+            embed.description = f"New API key set by {msg.author.mention}."
+            embed.color = self.embed.success_color
+
+
+        else:
+            embed.title = "Key Failure."
+            embed.description = "Failed to set API key. Key has not been changed."
+            embed.color = self.embed.error_color
+        
+        await self.current_semester.admin_log_channel_obj.send(embed=embed)
+        #await msg.delete()
+
 
     async def process_student(self, msg, member, student_dict, student_role_obj, embed ):
 
@@ -270,15 +291,13 @@ class Bot:
     async def process_welcome_msg(self, msg):
 
         # initialize variables 
-        student_role_obj = self.student_role_obj
+        student_role_obj = self.current_semester.student_role_obj
         student_dict = {}
         student_key = 'integration_id'
         student_name = 'name'
         index = 0
         desc = ""
         title = "Error in processing students"
-        required_channels = self.required_channels # placeholder
-        required_roles = self.required_roles + self.current_semester.lab_sections 
 
         # grab member : discord's method of adding roles/nicknames
         member = await msg.guild.fetch_member(msg.author.id)
@@ -351,7 +370,7 @@ class Bot:
 
         return channel_obj != None
     
-    def validate_channels(self, channel_names=None, embed=None, terminal=False):
+    def validate_channels(self, channel_names=None, embed=None, verbose=False):
 
         # initialize variables
         all_valid = True
@@ -376,7 +395,7 @@ class Bot:
             embed.description = desc
 
         # print to terminal if applicable
-        if terminal and desc != "":
+        if verbose and desc != "":
             print(desc)
 
         # return valid status
@@ -388,7 +407,7 @@ class Bot:
         return role_obj != None
     
     # Validates either all required roles or a passed set of roles
-    def validate_roles(self, role_names=None, embed=None, terminal=False):
+    def validate_roles(self, role_names=None, embed=None, verbose=False):
 
         # initialize variables
         all_valid = True
@@ -413,7 +432,7 @@ class Bot:
             embed.description = desc
 
         # print to terminal if applicable
-        if terminal and desc != "":
+        if verbose and desc != "":
             print(desc)
 
         # return valid status
@@ -422,14 +441,18 @@ class Bot:
     # validates server is properly setup
     def validate_setup(self):
         
+        # validate API key
+        print("Validating Canvas API key...")
+        canvas = self.canvas.validate_api_key( verbose=True )
+
         # validate channels
         print("Validating all channels...")
-        channels = self.validate_channels( terminal=True )
+        channels = self.validate_channels( verbose=True )
 
         # validate roles
         print("Validating all roles...")
-        roles    = self.validate_roles( terminal=True )
-        return channels and roles
+        roles    = self.validate_roles( verbose=True )
+        return canvas and channels and roles
 
     '''
     PRIVATE FUNCTIONS
@@ -437,25 +460,26 @@ class Bot:
     def __init__(self, name, client, prefix, dft_color, TOKEN):
 
         # initialize important stuff
-        self.client    = client
-        self.name      = name
-        self.dft_color = dft_color
-        self.prefix    = prefix
-        self.token     = TOKEN
+        self.client    = client    # discord client o bject
+        self.name      = name      # str
+        self.dft_color = dft_color # hex
+        self.prefix    = prefix    # str
+        self.token     = TOKEN     # str | TODO: make this environmental variable
         
+
         # initialize additional file variables
-        self.invite_link = sc.invite_link
-        self.admin_list = cfg.admin_list
-        self.owner      = cfg.owner
-        self.student_role_str    = cfg.student_role
+        self.invite_link = sc.invite_link # str
+        self.admin_list = cfg.admin_list  # list of ints (discord IDs)
+        self.owner      = cfg.owner       # int (discord ID)
+        self.student_role_str    = cfg.student_role # str
 
         # all channel strings
-        self.welcome_channel_str          = cfg.welcome_channel_str
-        self.added_students_channel_str   = cfg.added_students_channel_str
-        self.admin_channel_str            = cfg.admin_channel_str
-        self.admin_log_channel_str        = cfg.admin_log_channel_str
-        self.student_cmds_channel_str    = cfg.student_cmds_channel_str
-        self.student_cmds_log_channel_str = cfg.student_cmds_log_channel_str
+        self.welcome_channel_str          = cfg.welcome_channel_str          # str
+        self.added_students_channel_str   = cfg.added_students_channel_str   # str
+        self.admin_channel_str            = cfg.admin_channel_str            # str
+        self.admin_log_channel_str        = cfg.admin_log_channel_str        # str
+        self.student_cmds_channel_str     = cfg.student_cmds_channel_str      # str
+        self.student_cmds_log_channel_str = cfg.student_cmds_log_channel_str # str
 
         # validation stuff
         self.required_roles    = [
@@ -476,7 +500,10 @@ class Bot:
         self.current_semester = None
 
         # establish other classes
-        self.embed      = Embed()
+        self.embed      = Embed( dft_color,         # hex
+                                 cfg.success_color, # hex
+                                 cfg.error_color    # hex
+        )
         self.canvas     = Canvas()
 
         # initialize all available commands for users to call
@@ -500,16 +527,21 @@ class Bot:
                             #                     True
 
                             # ),
-                            # self.prefix + "set_canvas_key":(
-                            #                     self.set_api_key,
-                            #                     "Reset the Canvas API key",
-                            #                     True
-                            # ),
+                            self.prefix + "set_api_key":(
+                                                self.set_api_key,
+                                                "Reset the Canvas API key",
+                                                True
+                            ),
                             # self.prefix + "update_lab":(
                             #                     self.update_lab,
                             #                     "Update a student's lab section",
                             #                     True
-                            #)
+                            #),
+                            # self.prefix + "view_student":(
+                            #                     self.view_student,
+                            #                     "View a student's current profile",
+                            #                     True
+                            # )
 
 
                         }

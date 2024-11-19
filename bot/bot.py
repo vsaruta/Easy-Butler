@@ -29,11 +29,12 @@ def run_discord_bot():
         #await client.change_presence(activity=discord.Game(name="New Bot!"))
         success = await bot.initialize_guilds() # has to go here, can't be done in _init_
 
+        # handle success status
         if success:
             print(f"{bot.name} is now running!")
         else:
             print(f"Shutting down {bot.name}...")
-            await client.close() # this doesn't handle all async threads, but it works for now
+            await client.close() # this doesn't close all async threads, but it works for now
 
     # Message Handler
     @client.event
@@ -45,7 +46,15 @@ def run_discord_bot():
         
         # realtime - specifically check for welcome channel
         if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
-            pass
+
+            # handle student
+            embed = bot.process_welcome_msg(msg)
+
+            # send the embed
+            async with msg.channel.typing(): 
+                
+                # send with reply
+                await msg.reply( embed=embed )
 
         # if in admin command channel 
         # handle any commands
