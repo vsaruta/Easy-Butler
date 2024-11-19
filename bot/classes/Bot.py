@@ -378,7 +378,7 @@ class Bot:
             embed.description = desc
 
         # print to terminal if applicable
-        if terminal:
+        if terminal and desc != "":
             print(desc)
 
         # return valid status
@@ -415,7 +415,7 @@ class Bot:
             embed.description = desc
 
         # print to terminal if applicable
-        if terminal:
+        if terminal and desc != "":
             print(desc)
 
         # return valid status
@@ -423,7 +423,13 @@ class Bot:
     
     # validates server is properly setup
     def validate_setup(self):
+        
+        # validate channels
+        print("Validating all channels...")
         channels = self.validate_channels( terminal=True )
+
+        # validate roles
+        print("Validating all roles...")
         roles    = self.validate_roles( terminal=True )
         return channels and roles
 
