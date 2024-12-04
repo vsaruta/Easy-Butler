@@ -31,15 +31,17 @@ class Semester:
         match = re.search(r"\b([A-Z]{2,})(\d{3})\b", name)
         return f"{match.group(1)}-{match.group(2)}" if match else None
 
-    def get_lab_sections(self, mystr, my_courses):
+    def get_lab_sections(self, search_str=None, my_courses=None):
 
         sections = []
 
+        if my_courses == None:
+            my_courses = self.my_courses
+
         for course in my_courses:
             name = course['name']
-
-            if mystr in name:
-                section = name[-3:]
+            if search_str in name:
+                section = f"Lab " + name[-3:]
                 sections.append(section)
 
         return sections

@@ -2,6 +2,7 @@ import discord
 import secret as sc
 import config as cfg
 from classes.Bot import Bot
+from discord.ext import tasks
 
 def run_discord_bot():
 
@@ -48,26 +49,30 @@ def run_discord_bot():
         if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
 
             # handle student
-            embed = await bot.process_welcome_msg(msg)
+            embeds = await bot.process_welcome_msg(msg)
 
             # send the embed
             async with msg.channel.typing(): 
+
+                for embed in embeds:
                 
-                # send with reply
-                await msg.reply( embed=embed )
+                    # send with reply
+                    await msg.reply( embed=embed )
 
         # if in admin command channel 
         # handle any commands
         if msg.content.startswith( bot.prefix ):
             
             # handle the command, grab the embed
-            embed = await bot.handle_command( msg )
+            embeds = await bot.handle_command( msg )
 
             # send the embed
             async with msg.channel.typing(): 
+
+                for embed in embeds:
                 
-                # send with reply
-                await msg.reply( embed=embed )
+                    # send with reply
+                    await msg.reply( embed=embed )
 
     # Run Bot with Token
         # Should be  the very last command inside of run_discord_bot 

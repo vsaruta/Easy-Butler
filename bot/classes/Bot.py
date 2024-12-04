@@ -6,12 +6,12 @@ from classes.Embed import Embed
 from classes.Canvas import Canvas
 from classes.Semester import Semester
 
-class Bot:
+class Bot( Canvas, Embed ):
 
     '''
     PUBLIC FUNCTIONS
     '''
-        
+    
     def get_channel_obj(self, channel_name):
         guild = self.current_semester.guild
         return discord.utils.get(guild.channels, name=channel_name)
@@ -22,6 +22,9 @@ class Bot:
 
     async def handle_command( self, msg ):
 
+        # Embeds
+        embed_list = []
+
         # initialize variables
         author_id = msg.author.id
 
@@ -30,7 +33,7 @@ class Bot:
         command = argv[0].lower()
 
         # initialize embed
-        embed = self.embed.initialize_embed( )
+        embed = self.initialize_embed( embed_list )
 
         # check if command is valid
         if command in self.commands.keys():
@@ -45,7 +48,7 @@ class Bot:
                 embed.title = "Unauthorized Command"
                 embed.description = "Sorry, only authorized users can use this command."
 
-                return embed # return early
+                return embed_list # return early
 
             # run the selected option
             await selected_option[0]( msg, embed )
@@ -57,7 +60,7 @@ class Bot:
             embed.description = "Command not recognized."
             embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
 
-        return embed
+        return embed_list
 
     async def help(self, msg, embed):
 
@@ -78,7 +81,7 @@ class Bot:
 
         # initialize variables
         guilds = self.client.guilds
-        my_courses = self.canvas.get_my_courses()
+        my_courses = self.get_my_courses()
 
         # loop through guilds
         for guild in guilds:
@@ -103,11 +106,6 @@ class Bot:
                 # assign to bot
                 self.current_semester = semester    
                 
-                # validate everything in the server
-                if not self.validate_setup():
-                    return False
-                   
-                
                 # set up the current semester's courses
                 self.current_semester.set_courses( my_courses )
 
@@ -121,7 +119,12 @@ class Bot:
                     self.get_channel_obj( self.student_cmds_log_channel_str ) 
                     )
 
-                # TODO: assign all lab roles right here
+                # add the lab roles to the required roles
+                self.required_roles += self.current_semester.lab_sections
+
+                # validate everything in the server
+                if not self.validate_setup():
+                    return False
 
         return True
 
@@ -134,28 +137,27 @@ class Bot:
         key = msg.content.split(" ")[1]
 
         # validate key, set if its good
-        if self.canvas.set_api_key(key, verbose=False):
+        if self.set_api_key(key, verbose=False):
             
             embed.title = "Key Success!"
             embed.description = f"New API key set by {msg.author.mention}."
-            embed.color = self.embed.success_color
+            embed.color = self.success_color
 
 
         else:
             embed.title = "Key Failure."
             embed.description = "Failed to set API key. Key has not been changed."
-            embed.color = self.embed.error_color
+            embed.color = self.error_color
         
         await self.current_semester.admin_log_channel_obj.send(embed=embed)
         #await msg.delete()
 
 
-    async def process_student(self, msg, member, student_dict, student_role_obj, embed ):
+    async def process_student(self, msg, member, student_dict, student_role_obj, embed):
 
         # grab the student's data from our custom dictionary
         integration_id = msg.content.lower()
         student_data = student_dict.get(integration_id)
-        success = False
         
         # We have found student
         if student_data != None:
@@ -165,6 +167,8 @@ class Bot:
             lab_section = student_data['lab_section']
             lab_role = student_data['lab_role']
 
+
+            print(student_data)
             # rename to canvas name
             await member.edit(nick=name)
 
@@ -173,9 +177,9 @@ class Bot:
             
             # give lab role, some students actually might not be enrolled
             if lab_role != None:
-                await member.add_roles(lab_role)
+                await member.add_roles(self.get_role_obj(lab_role))
 
-            self.embed.added_member(embed, msg.author, name, integration_id, lab_section)
+            self.added_member(embed, msg.author, name, integration_id, lab_section)
             
             # Don't know where this will go yet
             await self.current_semester.added_student_channel_obj.send(embed=embed)
@@ -184,14 +188,14 @@ class Bot:
             # await msg.delete()
 
             # success!
-            success = True
+            return True
         
         # student not in class
         else:
-            self.embed.member_not_found(embed, msg.author, integration_id)
+            self.member_not_found(embed, msg.author, integration_id)
             await self.current_semester.welcome_channel_obj.send(content=f"{msg.author.mention}", embed=embed)
 
-        return success
+        return False
     
     async def process_students(self, command, embed):
 
@@ -207,7 +211,7 @@ class Bot:
         for course_id in self.current_semester.combo_ids:
 
             # get students in combo class
-            students = self.canvas.retrieve_students( course_id )[0]
+            students = self.retrieve_students( course_id )[0]
 
             # loop thru each student
             for student in students:
@@ -229,7 +233,7 @@ class Bot:
         for course_id in self.current_semester.lab_ids:
             
             # get students in lab
-            students = self.canvas.retrieve_students( course_id )[0]
+            students = self.retrieve_students( course_id )[0]
 
             # grab lab name
             lab_section = self.current_semester.lab_sections[index]
@@ -287,18 +291,24 @@ class Bot:
         index = 0
         desc = ""
         title = "Error in processing students"
+        embed_list = []
+
+        # ignore owners
+        if msg.author.id in self.staff_list:
+            return embed_list
 
         # grab member : discord's method of adding roles/nicknames
         member = await msg.guild.fetch_member(msg.author.id)
 
         # initialize embed
-        embed = self.embed.initialize_embed(desc, title)
+        embed = self.initialize_embed(embed_list, desc, title)
         
+        # TODO: 
         # grab student lists for main class, really it might be more than 1 class
         for course_id in self.current_semester.combo_ids:
 
             # get students in combo class
-            students = self.canvas.retrieve_students( course_id )[0]
+            students = self.retrieve_students( course_id )[0]
 
             # loop thru each student
             for student in students:
@@ -320,7 +330,7 @@ class Bot:
         for course_id in self.current_semester.lab_ids:
             
             # get students in lab
-            students = self.canvas.retrieve_students( course_id )[0]
+            students = self.retrieve_students( course_id )[0]
 
             # grab lab name
             lab_section = self.current_semester.lab_sections[index]
@@ -352,6 +362,8 @@ class Bot:
 
             success = await self.process_student(msg, member, student_dict, student_role_obj, embed)
 
+        return embed_list
+    
     def validate_channel(self, channel_name):
 
         channel_obj = self.get_channel_obj(channel_name)
@@ -413,7 +425,7 @@ class Bot:
                 
                 # role not valid, add information
                 all_valid = False
-                desc += "- Role Error: `@{role_name}` not found."
+                desc += f"- Role Error: '{role_name}' does not exist.\n"
 
         # set embed desc if applicable
         if embed != None and not all_valid:
@@ -431,7 +443,7 @@ class Bot:
         
         # validate API key
         print("Validating Canvas API key...")
-        canvas = self.canvas.validate_api_key( verbose=True )
+        canvas = self.validate_api_key( verbose=True )
 
         # validate channels
         print("Validating all channels...")
@@ -440,6 +452,8 @@ class Bot:
         # validate roles
         print("Validating all roles...")
         roles    = self.validate_roles( verbose=True )
+
+        # return true/false
         return canvas and channels and roles
 
     '''
@@ -448,16 +462,16 @@ class Bot:
     def __init__(self, name, client, prefix, dft_color, TOKEN):
 
         # initialize important stuff
-        self.client    = client    # discord client o bject
-        self.name      = name      # str
-        self.dft_color = dft_color # hex
-        self.prefix    = prefix    # str
-        self.token     = TOKEN     # str | TODO: make this environmental variable
-        
+        self.client     = client    # discord client o bject
+        self.name       = name      # str
+        self.dft_color  = dft_color # hex
+        self.prefix     = prefix    # str
+        self.token      = TOKEN     # str | TODO: make this environmental variable
 
         # initialize additional file variables
         self.invite_link = sc.invite_link # str
         self.admin_list = cfg.admin_list  # list of ints (discord IDs)
+        self.staff_list = cfg.staff_list  # list of ints (discord IDs)
         self.owner      = cfg.owner       # int (discord ID)
         self.student_role_str    = cfg.student_role # str
 
@@ -483,16 +497,12 @@ class Bot:
             self.student_cmds_log_channel_str   # log for student commands
         ]
 
-
         # initialize general variables
         self.current_semester = None
 
         # establish other classes
-        self.embed      = Embed( dft_color,         # hex
-                                 cfg.success_color, # hex
-                                 cfg.error_color    # hex
-        )
-        self.canvas     = Canvas()
+        Embed.__init__(self, dft_color, cfg.success_color, cfg.error_color)
+        Canvas.__init__(self)
 
         # initialize all available commands for users to call
         self.commands = {   self.prefix + "help": ( self.help, # command to run
@@ -534,8 +544,8 @@ class Bot:
 
                         }
 
-    def _is_ta(self, author):
-        return author.id in self.ta_list
+    def _is_staff(self, author):
+        return author.id in self.staff_list
     
     def _is_admin(self, author):
         return author.id in self.admin_list
