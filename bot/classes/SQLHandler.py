@@ -77,7 +77,16 @@ class SQLHandler:
 
 
     def retrieve(self, model: SQLModel, filters: dict = None) -> list[SQLModel]:
-        """Retrieve records from the database based on optional filters."""
+        """
+        Retrieve records from the database based on optional filters.
+        
+        Args:
+            model (SQLModel): The SQLModel class to query.
+            filters (dict, optional): A dictionary of column-value pairs for filtering.
+        
+        Returns:
+            list[SQLModel]: A list of records that match the filters.
+        """
         with Session(self.engine) as session:
             # Start with a base query
             query = select(model)
@@ -85,6 +94,7 @@ class SQLHandler:
             # Apply filters if provided
             if filters:
                 for key, value in filters.items():
+                    # Use getattr to dynamically access model fields
                     query = query.where(getattr(model, key) == value)
 
             # Execute the query and return results as a list
@@ -94,6 +104,8 @@ class SQLHandler:
 # Student Table
 class Course(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100, default=None )
+    section: str = Field(max_length=3, default=None, nullable=True)
 
 class Student(SQLModel, table=True):
     id: str = Field(max_length=10, default=None, primary_key=True)

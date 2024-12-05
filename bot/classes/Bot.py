@@ -47,7 +47,7 @@ class Bot( Embed, Canvas, SQLHandler ):
                 # set stuff
                 embed.title = "Unauthorized Command"
                 embed.description = "Sorry, only authorized users can use this command."
-
+                embed_list.append(embed)
                 return embed_list # return early
 
             # run the selected option
@@ -59,10 +59,69 @@ class Bot( Embed, Canvas, SQLHandler ):
             embed.title = "Invalid Command"
             embed.description = "Command not recognized."
             embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
-
+        
+        embed_list.append(embed)
         return embed_list
 
+    async def handle_welcome_channel(self, msg):
+
+        # initialize variables
+        embed_list = []
+        integration_id = msg.content.strip("@nau.edu")
+        embed = self.initialize_embed( desc="", title="")
+
+        # skip staff members
+        if msg.author.id in self.staff_list:
+            return embed_list
         
+        # find member
+        results = self.retrieve(Student, {"id":integration_id})
+        member = await msg.guild.fetch_member(msg.author.id)
+
+        # member not found
+        if len(results) == 0:
+            self.member_not_found(embed, msg.author, integration_id)
+            embed_list.append(embed)
+            return embed_list
+        
+        # member is found
+        student = results[0]
+
+        # Check if they are in or not
+        if self.current_semester.student_role_obj not in member.roles:
+            
+            # get student items
+            integration_id = student.id
+            name           = student.name
+            labID          = student.lab_class
+
+            # get lab str if applicable
+            if labID != None:
+                result = self.retrieve(Course, {"id":labID})[0]
+                lab_role_str = "Lab " + result.section
+
+            # process the student
+            await self.process_student(member, name, lab_role_str)
+
+            # update embed
+            self.added_member(embed, msg.author, name, integration_id, lab_role_str)
+
+            channel = self.get_channel_obj(self.added_students_channel_str)
+            await channel.send(embed=embed)
+        
+        return embed_list
+    
+    async def process_student(self, member, name, lab_role_str = None):
+
+        student_role_obj = self.get_role_obj(self.student_role_str)
+
+        await member.edit(nick=name)
+        await member.add_roles(student_role_obj)
+
+        if lab_role_str != None:
+            lab_role_obj = self.get_role_obj(lab_role_str)
+            await member.add_roles(lab_role_obj)
+
     async def help(self, msg, embed):
 
         # help command
@@ -186,9 +245,6 @@ class Bot( Embed, Canvas, SQLHandler ):
             # get students in lab
             students = self.retrieve_students( course_id )[0]
 
-            # grab lab name
-            lab_section = self.current_semester.lab_sections[index]
-
             # increment index
             index += 1
 
@@ -229,12 +285,26 @@ class Bot( Embed, Canvas, SQLHandler ):
             
             # Handle main course
             if courseID != None and not self.check_exists( Course, {"id": courseID} ):
-                self.insert(Course(id=courseID))
-
-            # Handle 
-            if labID != None and not self.check_exists( Course, {"id":labID} ):
-                self.insert(Course(id=labID))
+                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, courseID)
+                section = self.current_semester.get_lab_section(full_course_name)
+                self.insert(Course(id=courseID, name=full_course_name, section=section))
             
+            elif not self.check_exists( Course, {"id": courseID} ):
+                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, courseID)
+                section = self.current_semester.get_lab_section(full_course_name)
+                self.update(Course(id=courseID, name=full_course_name, section=section))
+
+            # Handle lab
+            if labID != None and not self.check_exists( Course, {"id":labID} ):
+                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, labID)
+                section = self.current_semester.get_lab_section(full_course_name)
+                self.insert(Course(id=labID, name=full_course_name, section=section))
+            
+            elif self.check_exists( Course, {"id":labID} ):
+                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, labID)
+                section = self.current_semester.get_lab_section(full_course_name)
+                self.insert(Course(id=labID, name=full_course_name, section=section))
+
             # insert student if not in db
             if not self.check_exists( Student, {"id":integration_id} ):
                 self.insert(Student(

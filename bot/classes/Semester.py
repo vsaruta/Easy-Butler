@@ -24,12 +24,26 @@ class Semester:
         # Regular expression to match SEC00 followed by any number of digits
         pattern = r"SEC00\d+"
         matches = re.findall(pattern, text)
+
+        if len(matches) == 0:
+            return None
+        
         return matches
 
     def get_classcode(self, name):
         # Extracts the class code and formats it with a hyphen (e.g., "CS-126")
         match = re.search(r"\b([A-Z]{2,})(\d{3})\b", name)
         return f"{match.group(1)}-{match.group(2)}" if match else None
+
+    def get_lab_section(self, labname):
+
+        pattern = r"00\d+"
+        matches = re.findall(pattern, labname)
+
+        if len(matches) != 0:
+            return matches[0]
+        
+        return None
 
     def get_lab_sections(self, search_str=None, my_courses=None):
 
@@ -39,6 +53,8 @@ class Semester:
             my_courses = self.my_courses
 
         for course in my_courses:
+
+
             name = course['name']
             if search_str in name:
                 section = f"Lab " + name[-3:]

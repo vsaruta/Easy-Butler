@@ -34,6 +34,7 @@ def run_discord_bot():
     async def on_ready():
         #await client.change_presence(activity=discord.Game(name="New Bot!"))
         success = await bot.initialize_guilds() # has to go here, can't be done in _init_
+        print("Updating database...")
         bot.update_database()
 
         # handle success status
@@ -55,7 +56,7 @@ def run_discord_bot():
         if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
 
             # handle student
-            embeds = await bot.process_welcome_msg(msg)
+            embeds = await bot.handle_welcome_channel( msg )
 
             # send the embed
             async with msg.channel.typing(): 

@@ -14,10 +14,9 @@ class Embed:
         embed.desc  = ""
         embed.color = self.dft_color
 
-    def initialize_embed(self,  embed_list, title="", desc="", color=0xffffff):
+    def initialize_embed(self, title="", desc="", color=0xffffff):
         embed = discord.Embed(title=title, description=desc, color=color)
         embed.timestamp = datetime.now()
-        embed_list.append(embed)
         return embed
     
     def added_member( self, embed, author, name, integration_id, lab_section ):
@@ -28,7 +27,6 @@ class Embed:
         **Lab Section:** {lab_section}
         **Discord User:**: {author.mention}
         '''
-        embed.set_thumbnail(url=author.avatar_url)
         embed.title = "New Student Added"
         embed.description = desc
         embed.color = self.success_color

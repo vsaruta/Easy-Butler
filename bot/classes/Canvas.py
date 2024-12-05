@@ -44,7 +44,7 @@ class Canvas:
             courses = resp.json()
 
         return courses
-     
+
     def retrieve_students(self, course_id):
         
         # initialize variables 
