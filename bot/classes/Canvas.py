@@ -19,7 +19,14 @@ class Canvas:
             "per_page": self.per_page,
             "page": self.page
         }
+    
 
+    def find_course_name_by_id(self, course_list, course_id):
+        for course in course_list:
+            if course['id'] == course_id:
+                return course['name']
+        return None
+    
     def get_my_courses(self):
 
         # create course list 
@@ -65,7 +72,6 @@ class Canvas:
                 not_done = False
 
         return students
-    
     
     def retrieve_tas(self, course_id):
         ta_list = []

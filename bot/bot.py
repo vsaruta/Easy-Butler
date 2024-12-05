@@ -20,6 +20,11 @@ def run_discord_bot():
     # initialize bot
     bot = Bot(name, client, prefix, dft_color, token)
 
+    # Task loop to update data periodically
+    @tasks.loop(minutes=30)  
+    async def update_student_data():
+        bot.update_database()
+
     @client.event
     async def on_guild_join(guild): # check if we need to update bot on a new join
         success = await bot.initialize_guilds()
@@ -29,6 +34,7 @@ def run_discord_bot():
     async def on_ready():
         #await client.change_presence(activity=discord.Game(name="New Bot!"))
         success = await bot.initialize_guilds() # has to go here, can't be done in _init_
+        bot.update_database()
 
         # handle success status
         if success:

@@ -5,13 +5,13 @@ from datetime import datetime
 from classes.Embed import Embed 
 from classes.Canvas import Canvas
 from classes.Semester import Semester
+from classes.SQLHandler import SQLHandler, Course, Student
 
-class Bot( Canvas, Embed ):
+class Bot( Embed, Canvas, SQLHandler ):
 
     '''
     PUBLIC FUNCTIONS
     '''
-    
     def get_channel_obj(self, channel_name):
         guild = self.current_semester.guild
         return discord.utils.get(guild.channels, name=channel_name)
@@ -62,6 +62,7 @@ class Bot( Canvas, Embed ):
 
         return embed_list
 
+        
     async def help(self, msg, embed):
 
         # help command
@@ -152,61 +153,13 @@ class Bot( Canvas, Embed ):
         await self.current_semester.admin_log_channel_obj.send(embed=embed)
         #await msg.delete()
 
+    def initialize_students(self):
 
-    async def process_student(self, msg, member, student_dict, student_role_obj, embed):
-
-        # grab the student's data from our custom dictionary
-        integration_id = msg.content.lower()
-        student_data = student_dict.get(integration_id)
-        
-        # We have found student
-        if student_data != None:
-
-            # grab details
-            name = student_data['name']
-            lab_section = student_data['lab_section']
-            lab_role = student_data['lab_role']
-
-
-            print(student_data)
-            # rename to canvas name
-            await member.edit(nick=name)
-
-            # add student role
-            await member.add_roles(student_role_obj)
-            
-            # give lab role, some students actually might not be enrolled
-            if lab_role != None:
-                await member.add_roles(self.get_role_obj(lab_role))
-
-            self.added_member(embed, msg.author, name, integration_id, lab_section)
-            
-            # Don't know where this will go yet
-            await self.current_semester.added_student_channel_obj.send(embed=embed)
-
-            # delete message?
-            # await msg.delete()
-
-            # success!
-            return True
-        
-        # student not in class
-        else:
-            self.member_not_found(embed, msg.author, integration_id)
-            await self.current_semester.welcome_channel_obj.send(content=f"{msg.author.mention}", embed=embed)
-
-        return False
-    
-    async def process_students(self, command, embed):
-
-        # initialize variables 
-        student_role_obj = None
         student_dict = {}
-        student_key = 'integration_id'
+        student_key = "integration_id"
         student_name = 'name'
         index = 0
-        processed = 0
-        
+
         # grab student lists for main class, really it might be more than 1 class
         for course_id in self.current_semester.combo_ids:
 
@@ -224,8 +177,6 @@ class Bot( Canvas, Embed ):
                                                     "name": student[student_name],
                                                     "combo_id": course_id,
                                                     "lab_id": None,
-                                                    "lab_section":None,
-                                                    "lab_role":None
                                                 }
             
 
@@ -256,113 +207,53 @@ class Bot( Canvas, Embed ):
                                                     }
                 # update their lab
                 student_dict[ integration_id ]["lab_id"] = course_id
-                student_dict[ integration_id ]["lab_section"] = lab_section
-                student_dict[ integration_id ]["lab_role"] = self.get_role_obj( f"Lab {lab_section}")
-
-        # loop through message history
-        async for msg in self.current_semester.welcome_channel_obj.history():
-            
-            # ignore self
-            if msg.author.id == self.client.user.id:
-                continue
-
-            # grab member : discord's method of adding roles/nicknames
-            member = await msg.guild.fetch_member(msg.author.id)
-
-            # student hasnt been processed yet
-            if student_role_obj not in member.roles:
-
-                success = await self.process_student(msg, member, student_dict, student_role_obj, embed)
-
-
-        embed.title = "Finished Processing Students"
-        embed.description = f"Processed {processed} students."
     
-        return True
-
+        return student_dict
     
-    async def process_welcome_msg(self, msg):
+    def update_database(self):
 
-        # initialize variables 
-        student_role_obj = self.current_semester.student_role_obj
-        student_dict = {}
-        student_key = 'integration_id'
-        student_name = 'name'
-        index = 0
-        desc = ""
-        title = "Error in processing students"
-        embed_list = []
+        # initialize variables
+        student_dict = self.initialize_students()
 
-        # ignore owners
-        if msg.author.id in self.staff_list:
-            return embed_list
+        # Loop through courses
+        for integration_id, values in student_dict.items():
 
-        # grab member : discord's method of adding roles/nicknames
-        member = await msg.guild.fetch_member(msg.author.id)
-
-        # initialize embed
-        embed = self.initialize_embed(embed_list, desc, title)
-        
-        # TODO: 
-        # grab student lists for main class, really it might be more than 1 class
-        for course_id in self.current_semester.combo_ids:
-
-            # get students in combo class
-            students = self.retrieve_students( course_id )[0]
-
-            # loop thru each student
-            for student in students:
-
-                # grab their integration ID
-                integration_id = student[student_key]
-
-                # add them to the dict
-                student_dict[ integration_id ] = {
-                                                    "name": student[student_name],
-                                                    "combo_id": course_id,
-                                                    "lab_id": None,
-                                                    "lab_section":None,
-                                                    "lab_role":None
-                                                }
+            # get course ID (int)
+            name = values["name"]
+            courseID = values["combo_id"]
+            labID    = values["lab_id"]
             
-
-        # grab student list for labs
-        for course_id in self.current_semester.lab_ids:
+            # Skip test student
+            if name == "Test Student":
+                return
             
-            # get students in lab
-            students = self.retrieve_students( course_id )[0]
+            # Handle main course
+            if courseID != None and not self.check_exists( Course, {"id": courseID} ):
+                self.insert(Course(id=courseID))
 
-            # grab lab name
-            lab_section = self.current_semester.lab_sections[index]
-
-            # increment index
-            index += 1
-
-            # loop thru each student
-            for student in students:
-
-                # grab their integration iD
-                integration_id = student[student_key]
-
-                # if student is not in the main class, add them but main class is NONE
-                if integration_id not in student_dict.keys():
-        
-                    student_dict[ integration_id] = {
-                                                    "name": student[student_name],
-                                                    "combo_id": None
-                                                    }
-                # update their lab
-                student_dict[ integration_id ]["lab_id"] = course_id
-                student_dict[ integration_id ]["lab_section"] = lab_section
-                student_dict[ integration_id ]["lab_role"] = self.get_role_obj( f"Lab {lab_section}")
+            # Handle 
+            if labID != None and not self.check_exists( Course, {"id":labID} ):
+                self.insert(Course(id=labID))
             
-
-        # student hasnt been processed yet
-        if self.current_semester.student_role_obj not in member.roles:
-
-            success = await self.process_student(msg, member, student_dict, student_role_obj, embed)
-
-        return embed_list
+            # insert student if not in db
+            if not self.check_exists( Student, {"id":integration_id} ):
+                self.insert(Student(
+                                    id=integration_id, 
+                                    name=name, 
+                                    main_class=courseID, 
+                                    lab_class=labID
+                                    )
+                            )
+                
+            # Student is in db, update their info
+            else:
+                self.update(Student(
+                                    id=integration_id, 
+                                    name=name, 
+                                    main_class=courseID, 
+                                    lab_class=labID
+                                    )
+                            )
     
     def validate_channel(self, channel_name):
 
@@ -489,12 +380,12 @@ class Bot( Canvas, Embed ):
         ]
 
         self.required_channels = [
-            self.welcome_channel_str,           # channel to welcome new students
+            self.welcome_channel_str,            # channel to welcome new students
             self.added_students_channel_str,     # channel to log any added students
-            self.admin_channel_str,             # channel for admin commands
+            self.admin_channel_str,              # channel for admin commands
             self.admin_log_channel_str,          # log for admin commands
-            self.student_cmds_channel_str,      # channel for student commands
-            self.student_cmds_log_channel_str   # log for student commands
+            self.student_cmds_channel_str,       # channel for student commands
+            self.student_cmds_log_channel_str    # log for student commands
         ]
 
         # initialize general variables
@@ -503,17 +394,18 @@ class Bot( Canvas, Embed ):
         # establish other classes
         Embed.__init__(self, dft_color, cfg.success_color, cfg.error_color)
         Canvas.__init__(self)
+        SQLHandler.__init__(self)
 
         # initialize all available commands for users to call
         self.commands = {   self.prefix + "help": ( self.help, # command to run
                                                     "List of commands", # help desc
                                                     False, # is admin-only command
                             ),
-                            self.prefix + "process_students": (
-                                                self.process_students,
-                                                "Process students - Kind of implemented",
-                                                True, # is admin-only command
-                            ),
+                            # self.prefix + "process_students": (
+                            #                     self.process_students,
+                            #                     "Process students - Kind of implemented",
+                            #                     True, # is admin-only command
+                            # ),
                             self.prefix + "invite" : (
                                                 self.invite,
                                                 "Invite the bot to another server",
@@ -525,6 +417,11 @@ class Bot( Canvas, Embed ):
                             #                     True
 
                             # ),
+                            self.prefix + "force_update":(
+                                                self.update_database,
+                                                "Force-updates the database.",
+                                                True
+                            ),
                             self.prefix + "set_api_key":(
                                                 self.set_api_key,
                                                 "Reset the Canvas API key",
