@@ -71,11 +71,6 @@ class EmbedHandler:
             if not channel:
                 raise ValueError(f"Channel '{channel_name}' not found in guild '{self.guild.name}'.")
 
-
-
-
-
-
         # Create the embed
         embed = EmbedHandler.CustomEmbed(
             title=data.get("title").format(**kwargs),             # format the title w args
