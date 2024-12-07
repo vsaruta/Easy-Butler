@@ -19,13 +19,7 @@ class Canvas:
             "per_page": self.per_page,
             "page": self.page
         }
-    
 
-    def find_course_name_by_id(self, course_list, course_id):
-        for course in course_list:
-            if course['id'] == course_id:
-                return course['name']
-        return None
     
     def get_my_courses(self):
 
@@ -43,6 +37,7 @@ class Canvas:
 
             courses = resp.json()
 
+        
         return courses
 
     def retrieve_students(self, course_id):
@@ -77,7 +72,7 @@ class Canvas:
         ta_list = []
         return ta_list
     
-    def validate_api_key(self, key=None, verbose=False):
+    def validate_api_key(self, key=None, keep_resp=None, verbose=False):
 
         url = self.base_url + "users/self"
 
@@ -97,7 +92,7 @@ class Canvas:
             return False
 
     def set_api_key(self, api_key, verbose=False):
-        if self.validate_api_key(api_key, verbose):
+        if self.validate_api_key(key=api_key, verbose=verbose):
             self.API_KEY=api_key
             return True
         return False

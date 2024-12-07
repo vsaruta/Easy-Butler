@@ -1,7 +1,7 @@
 import discord
 from datetime import datetime
 
-class Embed:
+class Embed ( ):
 
     def __init__(self, dft, success, error) -> None:
         self.dft_color = dft
@@ -13,6 +13,9 @@ class Embed:
         embed.title = ""
         embed.desc  = ""
         embed.color = self.dft_color
+
+    def discrard_embed(self, embed):
+        embed.title = "Discard"
 
     def initialize_embed(self, title="", desc="", color=0xffffff):
         embed = discord.Embed(title=title, description=desc, color=color)

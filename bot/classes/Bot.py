@@ -12,6 +12,13 @@ class Bot( Embed, Canvas, SQLHandler ):
     '''
     PUBLIC FUNCTIONS
     '''
+
+    def find_course_name_by_id(self, course_list, course_id):
+        for course in course_list:
+            if course['id'] == course_id:
+                return course['name']
+        return None
+
     def get_channel_obj(self, channel_name):
         guild = self.current_semester.guild
         return discord.utils.get(guild.channels, name=channel_name)
@@ -60,7 +67,10 @@ class Bot( Embed, Canvas, SQLHandler ):
             embed.description = "Command not recognized."
             embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
         
-        embed_list.append(embed)
+        # Last minute check to ensure we don't send anything we aren't supposed to
+        if embed.title != "Discard":
+            embed_list.append(embed)
+
         return embed_list
 
     async def handle_welcome_channel(self, msg):
@@ -69,58 +79,65 @@ class Bot( Embed, Canvas, SQLHandler ):
         embed_list = []
         integration_id = msg.content.strip("@nau.edu")
         embed = self.initialize_embed( desc="", title="")
+        channel = self.get_channel_obj(self.added_students_channel_str)
 
         # skip staff members
         if msg.author.id in self.staff_list:
+            self.discrard_embed(embed) 
             return embed_list
-        
-        # find member
-        results = self.retrieve(Student, {"id":integration_id})
-        member = await msg.guild.fetch_member(msg.author.id)
-
-        # member not found
-        if len(results) == 0:
+    
+        # fail if id is invalid
+        if not self.validate_student( integration_id ):
             self.member_not_found(embed, msg.author, integration_id)
             embed_list.append(embed)
             return embed_list
-        
-        # member is found
-        student = results[0]
 
-        # Check if they are in or not
-        if self.current_semester.student_role_obj not in member.roles:
-            
-            # get student items
-            integration_id = student.id
+        # get member
+        student = self.retrieve(Student, {"id":integration_id})[0]
+        member = await msg.guild.fetch_member(msg.author.id)
+
+        result = await self.process_student( member, student )
+        
+        if result:
+            self.added_member(embed, msg.author, student.name, student.id, student.section)
+       
+        await channel.send(embed=embed)
+        
+        return embed_list
+    
+    async def process_student( self, member, student ):
+
+        # initialize variables
+        student_role_obj = self.get_role_obj(self.student_role_str)
+        
+        # check if we even need to process them
+        if student_role_obj not in member.roles:
+
+            # grab name and labID
             name           = student.name
             labID          = student.lab_class
 
-            # get lab str if applicable
+            # Check if they have a lab
             if labID != None:
                 result = self.retrieve(Course, {"id":labID})[0]
                 lab_role_str = "Lab " + result.section
 
-            # process the student
-            await self.process_student(member, name, lab_role_str)
+            # Edit their nickname
+            await member.edit(nick=name)
 
-            # update embed
-            self.added_member(embed, msg.author, name, integration_id, lab_role_str)
+            # Edit their main class role
+            await member.add_roles(student_role_obj)
 
-            channel = self.get_channel_obj(self.added_students_channel_str)
-            await channel.send(embed=embed)
+            # Edit their lab role, if applicable
+            if lab_role_str != None:
+                lab_role_obj = self.get_role_obj(lab_role_str)
+                await member.add_roles(lab_role_obj)
+
+            # Success!
+            return True
         
-        return embed_list
-    
-    async def process_student(self, member, name, lab_role_str = None):
-
-        student_role_obj = self.get_role_obj(self.student_role_str)
-
-        await member.edit(nick=name)
-        await member.add_roles(student_role_obj)
-
-        if lab_role_str != None:
-            lab_role_obj = self.get_role_obj(lab_role_str)
-            await member.add_roles(lab_role_obj)
+        # Student doesn't need to be added
+        return False
 
     async def help(self, msg, embed):
 
@@ -191,13 +208,14 @@ class Bot( Embed, Canvas, SQLHandler ):
     async def invite(self, msg, embed):
         pass
 
-    async def set_api_key( self, msg, embed):
+    async def handle_api_set( self, msg, embed ):
 
         # grab key
         key = msg.content.split(" ")[1]
+        resp = []
 
         # validate key, set if its good
-        if self.set_api_key(key, verbose=False):
+        if self.set_api_key(key, verbose=True):
             
             embed.title = "Key Success!"
             embed.description = f"New API key set by {msg.author.mention}."
@@ -206,12 +224,18 @@ class Bot( Embed, Canvas, SQLHandler ):
 
         else:
             embed.title = "Key Failure."
-            embed.description = "Failed to set API key. Key has not been changed."
+            embed.description = f'''
+                                Failed to set API key.
+                                
+                                **Attempt by**: {msg.author.mention}
+                                '''
             embed.color = self.error_color
         
         await self.current_semester.admin_log_channel_obj.send(embed=embed)
-        #await msg.delete()
+        await msg.delete()
 
+        self.discrard_embed(embed)
+    
     def initialize_students(self):
 
         student_dict = {}
@@ -398,7 +422,7 @@ class Bot( Embed, Canvas, SQLHandler ):
 
         # return valid status
         return all_valid
-    
+
     # validates server is properly setup
     def validate_setup(self):
         
@@ -416,6 +440,12 @@ class Bot( Embed, Canvas, SQLHandler ):
 
         # return true/false
         return canvas and channels and roles
+
+    def validate_student(self, integration_id):
+
+        results = self.retrieve(Student, {"id":integration_id})
+
+        return len(results) != 0
 
     '''
     PRIVATE FUNCTIONS
@@ -493,7 +523,7 @@ class Bot( Embed, Canvas, SQLHandler ):
                                                 True
                             ),
                             self.prefix + "set_api_key":(
-                                                self.set_api_key,
+                                                self.handle_api_set,
                                                 "Reset the Canvas API key",
                                                 True
                             ),
