@@ -2,12 +2,12 @@ import discord
 import secret as sc
 import config as cfg
 from datetime import datetime
-from classes.Embed import Embed 
 from classes.Canvas import Canvas
 from classes.Semester import Semester
+from classes.EmbedHandler import EmbedHandler 
 from classes.SQLHandler import SQLHandler, Course, Student
 
-class Bot( Embed, Canvas, SQLHandler ):
+class Bot( EmbedHandler, Canvas, SQLHandler ):
 
     '''
     PUBLIC FUNCTIONS
@@ -29,18 +29,12 @@ class Bot( Embed, Canvas, SQLHandler ):
 
     async def handle_command( self, msg ):
 
-        # Embeds
-        embed_list = []
-
         # initialize variables
         author_id = msg.author.id
 
-        # Get command - axe.lookup
+        # Get command 
         argv = msg.content.split()
         command = argv[0].lower()
-
-        # initialize embed
-        embed = self.initialize_embed( embed_list )
 
         # check if command is valid
         if command in self.commands.keys():
@@ -51,46 +45,42 @@ class Bot( Embed, Canvas, SQLHandler ):
             # Ensure permissions, currently owner-only
             if author_id != self.owner and selected_option[2] == True:
 
+                embed = await self.get_embed("unauthorized-user", 
+                                       mention=msg.author)
+
                 # set stuff
-                embed.title = "Unauthorized Command"
-                embed.description = "Sorry, only authorized users can use this command."
-                embed_list.append(embed)
-                return embed_list # return early
+                # embed.title = "Unauthorized Command"
+                # embed.description = "Sorry, only authorized users can use this command."
+                # embed_list.append(embed)
+                return embed # return early
 
             # run the selected option
-            await selected_option[0]( msg, embed )
+            embed = await selected_option[0]( msg )
 
             
         # Command not in the command dictionary
         else:  
-            embed.title = "Invalid Command"
-            embed.description = "Command not recognized."
-            embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
-        
-        # Last minute check to ensure we don't send anything we aren't supposed to
-        if embed.title != "Discard":
-            embed_list.append(embed)
+            embed = await self.get_embed("invalid-command", 
+                        prefix = self.prefix)
+            # embed.title = "Invalid Command"
+            # embed.description = "Command not recognized."
+            # embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
 
-        return embed_list
+        return embed
 
     async def handle_welcome_channel(self, msg):
 
         # initialize variables
-        embed_list = []
         integration_id = msg.content.strip("@nau.edu")
-        embed = self.initialize_embed( desc="", title="")
-        channel = self.get_channel_obj(self.added_students_channel_str)
 
         # skip staff members
         if msg.author.id in self.staff_list:
-            self.discrard_embed(embed) 
-            return embed_list
+            return None
     
         # fail if id is invalid
         if not self.validate_student( integration_id ):
-            self.member_not_found(embed, msg.author, integration_id)
-            embed_list.append(embed)
-            return embed_list
+            return await self.get_embed("invalid-integration-id",
+                           integration_id=integration_id)
 
         # get member
         student = self.retrieve(Student, {"id":integration_id})[0]
@@ -98,12 +88,21 @@ class Bot( Embed, Canvas, SQLHandler ):
 
         result = await self.process_student( member, student )
         
+        # student was processed
         if result:
-            self.added_member(embed, msg.author, student.name, student.id, student.section)
+            # self.added_member(embed, msg.author, student.name, student.id, student.section)
+            return await self.get_embed( "added-student-success",
+                                  author = msg.author,
+                                  name = student.name,
+                                  id = student.id,
+                                  section = student.section)
        
-        await channel.send(embed=embed)
+       # student was not processed
+        else:
+            return await self.get_embed( "added-student-failure",
+                                   author = msg.author,
+                                   id = student.id,)
         
-        return embed_list
     
     async def process_student( self, member, student ):
 
@@ -139,20 +138,11 @@ class Bot( Embed, Canvas, SQLHandler ):
         # Student doesn't need to be added
         return False
 
-    async def help(self, msg, embed):
+    async def help(self, msg):
 
-        # help command
-        embed.title = f"{self.name} help!"
-        is_admin = self._is_admin( msg.author )
-
-        # add in all items
-        for key, val in self.commands.items():
-
-            # admins see all commands, but if not admin, then just non-admin commands
-            if is_admin or not val[2]:
-
-                # add a field
-                embed.add_field(name=f"{key} - {val[1]}", value="", inline=False)
+        # Help command, sorry this isnt more automatic. 
+        # You'll have to write it out for now
+        return await self.get_embed("help", ctx=msg, mention=msg.author.mention)
 
     async def initialize_guilds(self):
 
@@ -179,6 +169,9 @@ class Bot( Embed, Canvas, SQLHandler ):
 
             # else we have found the active guild
             else:
+                
+                # set the guild objct for embeds
+                self.set_guild(guild)
 
                 # assign to bot
                 self.current_semester = semester    
@@ -205,36 +198,38 @@ class Bot( Embed, Canvas, SQLHandler ):
 
         return True
 
-    async def invite(self, msg, embed):
+    async def invite(self, msg):
         pass
 
-    async def handle_api_set( self, msg, embed ):
+    async def handle_api_set( self, msg ):
 
         # grab key
         key = msg.content.split(" ")[1]
-        resp = []
 
         # validate key, set if its good
         if self.set_api_key(key, verbose=True):
+
+            return await self.get_embed("key-sucess",
+                                  mention=msg.author.mention)
             
-            embed.title = "Key Success!"
-            embed.description = f"New API key set by {msg.author.mention}."
-            embed.color = self.success_color
+            # embed.title = "Key Success!"
+            # embed.description = f"New API key set by {msg.author.mention}."
+            # embed.color = self.success_color
 
 
         else:
-            embed.title = "Key Failure."
-            embed.description = f'''
-                                Failed to set API key.
+            return await self.get_embed("key-failure",
+                                  mention=msg.author.mention)
+            # embed.title = "Key Failure."
+            # embed.description = f'''
+            #                     Failed to set API key.
                                 
-                                **Attempt by**: {msg.author.mention}
-                                '''
-            embed.color = self.error_color
+            #                     **Attempt by**: {msg.author.mention}
+            #                     '''
+            # embed.color = self.error_color
         
-        await self.current_semester.admin_log_channel_obj.send(embed=embed)
+        #await self.current_semester.admin_log_channel_obj.send(embed=embed)
         await msg.delete()
-
-        self.discrard_embed(embed)
     
     def initialize_students(self):
 
@@ -355,7 +350,7 @@ class Bot( Embed, Canvas, SQLHandler ):
 
         return channel_obj != None
     
-    def validate_channels(self, channel_names=None, embed=None, verbose=False):
+    def validate_channels(self, channel_names=None, verbose=False):
 
         # initialize variables
         all_valid = True
@@ -374,10 +369,6 @@ class Bot( Embed, Canvas, SQLHandler ):
                 # channel not valid, add information
                 all_valid = False
                 desc += f"- Channel Error: `#{channel_name}` not found.\n"
-            
-        # set embed desc if applicable
-        if embed != None and not all_valid:
-            embed.description = desc
 
         # print to terminal if applicable
         if verbose and desc != "":
@@ -392,7 +383,7 @@ class Bot( Embed, Canvas, SQLHandler ):
         return role_obj != None
     
     # Validates either all required roles or a passed set of roles
-    def validate_roles(self, role_names=None, embed=None, verbose=False):
+    def validate_roles(self, role_names=None, verbose=False):
 
         # initialize variables
         all_valid = True
@@ -411,10 +402,6 @@ class Bot( Embed, Canvas, SQLHandler ):
                 # role not valid, add information
                 all_valid = False
                 desc += f"- Role Error: '{role_name}' does not exist.\n"
-
-        # set embed desc if applicable
-        if embed != None and not all_valid:
-            embed.description = desc
 
         # print to terminal if applicable
         if verbose and desc != "":
@@ -492,9 +479,10 @@ class Bot( Embed, Canvas, SQLHandler ):
         self.current_semester = None
 
         # establish other classes
-        Embed.__init__(self, dft_color, cfg.success_color, cfg.error_color)
         Canvas.__init__(self)
         SQLHandler.__init__(self)
+        EmbedHandler.__init__(self)
+        
 
         # initialize all available commands for users to call
         self.commands = {   self.prefix + "help": ( self.help, # command to run
