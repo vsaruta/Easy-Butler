@@ -14,7 +14,7 @@
                 "title": "Discord embed title",
                 "description": "Discord embed description",
                 "color": "Discord embed color",
-                "channel": "Channel to be sent in (msg.channel for anywhere)"
+                "channel": "Channel for embed to be sent in"
             }
         },
 
@@ -49,7 +49,7 @@
         "title": "Help from lunaBot!",
         "description": "This is a test. Hello {mention}!",
         "color": "DEFAULT",
-        "channel": "msg.channel"
+        "channel": "ANYWHERE"
     },
 
     "key-failure":{
