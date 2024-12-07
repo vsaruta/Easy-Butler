@@ -61,11 +61,11 @@ class EmbedHandler:
         # Resolve the destination channel by name
         channel_name = data.get("channel")
 
-        if channel_name == "msg.channel":
+        if channel_name == "ANYWHERE":
             if ctx:
                 channel = ctx.channel  # Use the current message's channel
             else:
-                raise ValueError("ctx must be provided when using 'msg.channel'.")
+                raise ValueError("ctx must be provided when using 'ANYWHERE'.")
         else: 
             channel = discord.utils.get(self.guild.text_channels, name=channel_name)
             if not channel:

@@ -1,8 +1,39 @@
 {
+    "_comments":{
+
+        "Hello there!":"Here is my solution to messy discord embeds.",
+
+        "#1":"These are the controls and are meant to be used in conjunction with EmbedHandler.",
+        "#2":"You can name an embed here and add it to the Discord bot",
+
+        "#3":"Use EmbedHandler to retrieve these. Example usage:",
+        "#4":"embed = EmbedHandler.get_embed('welcome', mention=msg.author.mention)", 
+
+        "#5":{
+            "parameters-explained":{
+                "title": "Discord embed title",
+                "description": "Discord embed description",
+                "color": "Discord embed color",
+                "channel": "Channel to be sent in (msg.channel for anywhere)"
+            }
+        },
+
+        "#6":"This just puts all embeds in one place so its not as messy anymore.",
+        "#7":"P.S. - you can use scripts/string_converter.py to format nice strings to json format."
+        
+    },
+
     "_embed-format":{
         "title": "",
         "description": "",
         "color": "",
+        "channel": ""
+    },
+
+    "added_student-fail":{
+        "title": "",
+        "description": "",
+        "color": "FAILURE",
         "channel": ""
     },
 
@@ -12,12 +43,7 @@
         "color": "SUCCESS",
         "channel": ""
     },
-    "added_student-fail":{
-        "title": "",
-        "description": "",
-        "color": "FAILURE",
-        "channel": ""
-    },
+
 
     "help":{
         "title": "Help from lunaBot!",
@@ -26,23 +52,47 @@
         "channel": "msg.channel"
     },
 
-    "key-sucess":{
-
-    },
     "key-failure":{
-
+        "title": "",
+        "description": "",
+        "color": "FAILURE",
+        "channel": ""
     },
+
+    "key-sucess":{
+        "title": "",
+        "description": "",
+        "color": "SUCCESS",
+        "channel": ""
+    },
+
     "invalid-command":{
-
+        "title": "",
+        "description": "",
+        "color": "FAILURE",
+        "channel": ""
     },
+
     "invalid-integration-id":{
+        "title": "",
+        "description": "",
+        "color": "FAILURE",
+        "channel": ""
+    },
 
-    },
     "unauthorized-user":{
+        "title": "",
+        "description": "",
+        "color": "FAILURE",
+        "channel": ""
             
     },
+
     "user-added":{
-            
+        "title": "",
+        "description": "",
+        "color": "SUCCESS",
+        "channel": ""
     },
 
     "welcome": {
