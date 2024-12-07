@@ -3,6 +3,9 @@ claire=343857226982883339
 vova=255168023751688193
 owner=claire
 
+#json file - for discord embed formatting
+json_file = "json/embeds.json"
+
 # strings
 name="LunaBot"
 prefix="luna."

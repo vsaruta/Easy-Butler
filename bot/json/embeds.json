@@ -1,0 +1,54 @@
+{
+    "_embed-format":{
+        "title": "",
+        "description": "",
+        "color": "",
+        "channel": ""
+    },
+
+    "added-student-success":{
+        "title": "",
+        "description": "",
+        "color": "SUCCESS",
+        "channel": ""
+    },
+    "added_student-fail":{
+        "title": "",
+        "description": "",
+        "color": "FAILURE",
+        "channel": ""
+    },
+
+    "help":{
+        "title": "Help from lunaBot!",
+        "description": "This is a test. Hello {mention}!",
+        "color": "DEFAULT",
+        "channel": "msg.channel"
+    },
+
+    "key-sucess":{
+
+    },
+    "key-failure":{
+
+    },
+    "invalid-command":{
+
+    },
+    "invalid-integration-id":{
+
+    },
+    "unauthorized-user":{
+            
+    },
+    "user-added":{
+            
+    },
+
+    "welcome": {
+        "title": "Welcome to the Server!",
+        "description": "We're glad to have you here, {mention}!",
+        "color": "DEFAULT",
+        "channel": "welcome-channel"
+    }
+}

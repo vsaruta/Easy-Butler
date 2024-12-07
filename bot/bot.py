@@ -3,6 +3,7 @@ import secret as sc
 import config as cfg
 from classes.Bot import Bot
 from discord.ext import tasks
+import classes.EmbedHandler
 
 def run_discord_bot():
 
@@ -56,30 +57,38 @@ def run_discord_bot():
         if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
 
             # handle student
-            embeds = await bot.handle_welcome_channel( msg )
+            embed = await bot.handle_welcome_channel( msg )
 
-            # send the embed
-            async with msg.channel.typing(): 
+            # get appriate channel
+            channel = embed.get_channel()
 
-                for embed in embeds:
-                
+            # ensure we want to send anything 
+            if channel != None:
+            
+                # send the embed
+                async with msg.channel.typing(): 
+                        
                     # send with reply
-                    await msg.reply( embed=embed )
+                    await channel.send( embed=embed )
 
-        # if in admin command channel 
-        # handle any commands
-        if msg.content.startswith( bot.prefix ):
+        # Handle commands elsewhere
+        elif msg.content.startswith( bot.prefix ):
             
             # handle the command, grab the embed
-            embeds = await bot.handle_command( msg )
+            embed = await bot.handle_command( msg )
 
-            # send the embed
-            async with msg.channel.typing(): 
+            # get appriate channel
+            channel = embed.get_channel()
 
-                for embed in embeds:
-                
+            # ensure we want to send anything 
+            if channel != None:
+            
+                # send the embed
+                async with msg.channel.typing(): 
+                        
                     # send with reply
-                    await msg.reply( embed=embed )
+                    await channel.send( embed=embed )
+
 
     # Run Bot with Token
         # Should be  the very last command inside of run_discord_bot 
