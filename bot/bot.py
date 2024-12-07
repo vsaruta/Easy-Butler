@@ -24,7 +24,7 @@ def run_discord_bot():
     # Task loop to update data periodically
     @tasks.loop(minutes=30)  
     async def update_student_data():
-        bot.update_database()
+        bot.update_database() # retrieves canvas information
 
     @client.event
     async def on_guild_join(guild): # check if we need to update bot on a new join
@@ -33,7 +33,8 @@ def run_discord_bot():
     # Show bot logged on successfully
     @client.event
     async def on_ready():
-        #await client.change_presence(activity=discord.Game(name="New Bot!"))
+
+        await client.change_presence(activity=discord.Game(name=f"Hi, I'm {bot.name}!"))
         success = await bot.initialize_guilds() # has to go here, can't be done in _init_
         print("Updating database...")
         bot.update_database()
