@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, Field, create_engine, Session, Relationship, sele
 class SQLHandler:
     def __init__(self) -> None:
         self.engine = create_engine('sqlite:///database/CS126.db')
-        SQLModel.metadata.drop_all(self.engine)
+        SQLModel.metadata.drop_all(self.engine) # TESTING PURPOSES
         SQLModel.metadata.create_all(self.engine)
 
     def check_exists(self, model: SQLModel, filters: dict) -> bool:
@@ -46,7 +46,38 @@ class SQLHandler:
                 session.add(model_instance)
                 session.commit()
                 return True
+            
+    def needs_update(self, model: SQLModel, record_id: int, updates: dict) -> bool:
+        """
+        Check if a record in the database needs to be updated based on the provided information.
 
+        Args:
+            model (SQLModel): The model class to query.
+            record_id (int): The ID of the record to check.
+            updates (dict): A dictionary of field names and their desired values.
+
+        Returns:
+            bool: True if the record needs to be updated, False otherwise.
+
+        Example Usage:
+            updates = {"name": "CS126L", "section": "002"}
+            needs_update = handler.needs_update(Course, record_id=1, updates=updates)
+        """
+        with Session(self.engine) as session:
+            # Retrieve the existing record
+            statement = select(model).where(model.id == record_id)
+            record = session.exec(statement).first()
+
+            # If the record does not exist, no update is needed
+            if not record:
+                return False
+
+            # Compare existing values with the updates
+            for key, value in updates.items():
+                if getattr(record, key) != value:
+                    return True  # An update is needed if any value differs
+
+        return False  # No updates needed
     def remove(self, model: SQLModel, record_id: int) -> bool:
         """Remove a record from the database by ID."""
         with Session(self.engine) as session:
@@ -58,6 +89,21 @@ class SQLHandler:
                 return True
         return False
 
+    def summary(self) -> dict:
+        """
+        Retrieve a summary of the database, including the number of courses and students.
+        
+        Returns:
+            dict: A dictionary with counts of courses and students.
+        """
+        with Session(self.engine) as session:
+            course_count = session.exec(select(Course)).all()
+            student_count = session.exec(select(Student)).all()
+            return {
+                "course_count": len(course_count),
+                "student_count": len(student_count)
+                }
+        
     def update(self, model: SQLModel, record_id: int, updates: dict) -> bool:
         """Update a record in the database."""
         with Session(self.engine) as session:
