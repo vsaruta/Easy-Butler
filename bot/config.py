@@ -27,6 +27,9 @@ error_color   = 0xF95C52 # hex
 admin_list=[owner,vova]
 staff_list=admin_list + []
 
+# how often the bot updates (in hours)
+HOURS_UPDATE = 12
+SECONDS_UPDATE = 1
 
 '''
 # old config stuff
