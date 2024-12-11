@@ -22,9 +22,10 @@ def run_discord_bot():
     bot = Bot(name, client, prefix, dft_color, token)
 
     # Task loop to update data periodically
-    @tasks.loop(minutes=30)  
-    async def update_student_data():
-        bot.update_database() # retrieves canvas information
+    @tasks.loop(hours=cfg.HOURS_UPDATE)  
+    async def passive_update_database():
+        embed = await bot.update_database() 
+        await embed.send()
 
     @client.event
     async def on_guild_join(guild): # check if we need to update bot on a new join
@@ -34,14 +35,26 @@ def run_discord_bot():
     @client.event
     async def on_ready():
 
-        await client.change_presence(activity=discord.Game(name=f"Hi, I'm {bot.name}!"))
+        # change bot's presence
+        await client.change_presence(activity=discord.Game(name=f"Hi, I'm {bot.name}! Try {bot.prefix}help"))
+
+        # Attempt to initialize guild
         success = await bot.initialize_guilds() # has to go here, can't be done in _init_
-        print("Updating database...")
-        bot.update_database()
 
         # handle success status
         if success:
+
+            # Print bot is now running
             print(f"{bot.name} is now running!")
+
+            # Start database updating coroutine
+            print("Updating database...")
+            passive_update_database.start()
+
+            # send the start update
+            embed = await bot.get_embed("bot-start")
+            await embed.send()
+
         else:
             print(f"Shutting down {bot.name}...")
             await client.close() # this doesn't close all async threads, but it works for now
@@ -50,46 +63,48 @@ def run_discord_bot():
     @client.event
     async def on_message(msg):
 
+        # Bot is not ready to handle messages yet as it hasn't synced yet
+        if not bot.ready:
+
+            embed = await bot.get_embed("bot-not-ready", 
+                                  channel=msg.channel,
+                                  mention=msg.author.mention)
+            return
+
         # Don't listen to self
         if msg.author == client.user or msg.attachments:
-            return 0 # skip
+            return
+
+        '''
+        vvvvvvvvvvvvvvvvv
+
+            Five bucks says we can shrink the two chunks down to just one 
         
+        vvvvvvvvvvvvvvvvv
+        '''
+
+        # Handle commands elsewhere
+        if msg.content.startswith( bot.prefix ):
+            
+            # handle the command, grab the embed
+            embed = await bot.handle_command( msg )
+
+            # Send 
+            if embed != None:
+                await embed.send()
+            
+            return
+
         # realtime - specifically check for welcome channel
         if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
 
             # handle student
             embed = await bot.handle_welcome_channel( msg )
 
-            # get appriate channel
-            channel = embed.get_channel()
+            if embed != None:
+                await embed.send()
 
-            # ensure we want to send anything 
-            if channel != None:
-            
-                # send the embed
-                async with msg.channel.typing(): 
-                        
-                    # send with reply
-                    await channel.send( embed=embed )
-
-        # Handle commands elsewhere
-        elif msg.content.startswith( bot.prefix ):
-            
-            # handle the command, grab the embed
-            embed = await bot.handle_command( msg )
-
-            # get appriate channel
-            channel = embed.get_channel()
-
-            # ensure we want to send anything 
-            if channel != None:
-            
-                # send the embed
-                async with msg.channel.typing(): 
-                        
-                    # send with reply
-                    await channel.send( embed=embed )
-
+            return 
 
     # Run Bot with Token
         # Should be  the very last command inside of run_discord_bot 
