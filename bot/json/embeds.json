@@ -15,6 +15,16 @@
                 "description": "Discord embed description",
                 "color": "Discord embed color",
                 "channel": "Channel for embed to be sent in"
+            },
+
+            "#valid-channels":{
+                "#welcome_channel_str":          "welcome",
+                "#added_students_channel_str":   "processed-students",
+                "#admin_channel_str":            "admin-commands",
+                "#admin_log_channel_str"  :      "admin-logs",
+                "#student_cmds_channel_str" :    "student-commands",
+                "#student_cmds_log_channel_str": "student-command-logs",
+                "#send-anywhere": "ANYWHERE"
             }
         },
 
@@ -30,75 +40,88 @@
         "channel": ""
     },
 
-    "added_student-fail":{
-        "title": "",
-        "description": "",
+    "added-student-failure":{
+        "title": "Failed to Process Student",
+        "description": "**School ID**: {integration_id}\n**Discord User:**: {author.mention}",
         "color": "FAILURE",
-        "channel": ""
+        "channel": "processed-students"
     },
 
     "added-student-success":{
-        "title": "",
-        "description": "",
+        "title": "Added New Student",
+        "description":"**Name**: {name}\n**School ID**: {integration_id}\n**Lab Section:** {lab_section}\n**Discord User:**: {mention}",
         "color": "SUCCESS",
-        "channel": ""
+        "channel": "processed-students"
     },
 
-
-    "help":{
-        "title": "Help from lunaBot!",
-        "description": "This is a test. Hello {mention}!",
+    "bot-not-ready":{
+        "title": "Bot Setting Up",
+        "description":"Sorry, {mention}. This bot is still in the process of setting up. Try again in a few minutes",
         "color": "DEFAULT",
         "channel": "ANYWHERE"
     },
 
-    "key-failure":{
-        "title": "",
-        "description": "",
-        "color": "FAILURE",
-        "channel": ""
+    "bot-start":{
+        "title": "Started Bot",
+        "description":"",
+        "color": "DEFAULT",
+        "channel": "admin-logs"
     },
 
-    "key-sucess":{
-        "title": "",
-        "description": "",
-        "color": "SUCCESS",
-        "channel": ""
+    "help":{
+        "title": "Help from lunaBot!",
+        "description": "{desc}",
+        "color": "DEFAULT",
+        "channel": "ANYWHERE"
     },
 
     "invalid-command":{
-        "title": "",
-        "description": "",
+        "title": "Invalid Command",
+        "description": "Unknown command. Find a list of commands with {prefix}help.",
         "color": "FAILURE",
-        "channel": ""
+        "channel": "ANYWHERE"
     },
 
     "invalid-integration-id":{
-        "title": "",
-        "description": "",
+        "title": "School ID Not Found",
+        "description": "Sorry {mention}, we could not find a student enrolled under the id {integration_id}. Please try again.",
         "color": "FAILURE",
-        "channel": ""
+        "channel": "welcome"
+    },
+
+    "key-failure":{
+        "title": "Canvas Key Failure",
+        "description": "Attempt by {mention}: Unable to sey new Canvas key. ",
+        "color": "FAILURE",
+        "channel": "admin-logs"
+    },
+
+    "key-sucess":{
+        "title": "Canvas Key Success",
+        "description": "Attempt by {mention}: Canvas key changed.",
+        "color": "SUCCESS",
+        "channel": "admin-logs"
     },
 
     "unauthorized-user":{
-        "title": "",
-        "description": "",
+        "title": "Unauthorized User",
+        "description": "Sorry {mention}, you are not authorized to use this command.",
         "color": "FAILURE",
-        "channel": ""
+        "channel": "ANYWHERE"
             
     },
 
-    "user-added":{
-        "title": "",
-        "description": "",
-        "color": "SUCCESS",
-        "channel": ""
+    "update-database-failure":{
+        "title": "Database Failire",
+        "description": "Unable to update the database: {e}",
+        "color": "FAILURE",
+        "channel": "admin-logs"
     },
-
-    "welcome": {
-        "title": "Welcome to the Server!",
-        "description": "We're glad to have you here, {mention}!",
-        "color": "DEFAULT",
-        "channel": "welcome-channel"
+    
+    "update-database-success":{
+        "title": "Updated Database",
+        "description": "Database has been successfully updated.\n\n**Summary**\n- {course_count} Courses\n- {student_count} Students\n({insertions} insertions, {updates} updates)",
+        "color": "SUCCESS",
+        "channel": "admin-logs"
     }
 }
