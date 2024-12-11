@@ -46,7 +46,8 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
             if author_id != self.owner and selected_option[2] == True:
 
                 embed = await self.get_embed("unauthorized-user", 
-                                       mention=msg.author)
+                                       channel = msg.channel,
+                                       mention=msg.author.mention)
 
                 # set stuff
                 # embed.title = "Unauthorized Command"
@@ -61,7 +62,7 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
         # Command not in the command dictionary
         else:  
             embed = await self.get_embed("invalid-command", 
-                        prefix = self.prefix)
+                                            prefix = self.prefix)
             # embed.title = "Invalid Command"
             # embed.description = "Command not recognized."
             # embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
@@ -71,31 +72,50 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
     async def handle_welcome_channel(self, msg):
 
         # initialize variables
-        integration_id = msg.content.strip("@nau.edu")
+        student_role_obj = self.get_role_obj(self.student_role_str)
+        member = await msg.guild.fetch_member(msg.author.id)
+        integration_id = msg.content
+        lab = None
+        lab_section = None
 
         # skip staff members
         if msg.author.id in self.staff_list:
             return None
+        
+        # Okay, then delete the messages so other student's can't snipe it.
+        await msg.delete()
+        
+        # Skip students that have already been processed
+        if student_role_obj in member.roles:
+            return None
     
         # fail if id is invalid
         if not self.validate_student( integration_id ):
-            return await self.get_embed("invalid-integration-id",
-                           integration_id=integration_id)
+            return await self.get_embed("invalid-integration-id", 
+                                        channel = msg.channel,
+                                        mention = msg.author.mention,
+                                        integration_id=integration_id)
 
         # get member
         student = self.retrieve(Student, {"id":integration_id})[0]
-        member = await msg.guild.fetch_member(msg.author.id)
 
-        result = await self.process_student( member, student )
-        
+        print(student)
+
+        if student.lab_class != None:
+            lab = self.retrieve(Course, {"id":student.lab_class})[0]
+            lab_section = lab.section
+
+        result = await self.process_student( member, student, lab )
+
         # student was processed
         if result:
             # self.added_member(embed, msg.author, student.name, student.id, student.section)
             return await self.get_embed( "added-student-success",
-                                  author = msg.author,
-                                  name = student.name,
-                                  id = student.id,
-                                  section = student.section)
+                                        name = student.name,
+                                        integration_id = integration_id,
+                                        lab_section = lab_section,
+                                        mention = msg.author.mention
+                                        )
        
        # student was not processed
         else:
@@ -104,22 +124,18 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
                                    id = student.id,)
         
     
-    async def process_student( self, member, student ):
+    async def process_student( self, member, student, lab ):
 
-        # initialize variables
-        student_role_obj = self.get_role_obj(self.student_role_str)
-        
-        # check if we even need to process them
-        if student_role_obj not in member.roles:
-
+        try:
+            # initialize variables
+            student_role_obj = self.get_role_obj(self.student_role_str)
+            lab_role_str = None
+            
             # grab name and labID
-            name           = student.name
-            labID          = student.lab_class
+            name = student.name
 
-            # Check if they have a lab
-            if labID != None:
-                result = self.retrieve(Course, {"id":labID})[0]
-                lab_role_str = "Lab " + result.section
+            if lab != None:
+                lab_role_str = "Lab " + lab.section
 
             # Edit their nickname
             await member.edit(nick=name)
@@ -132,17 +148,39 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
                 lab_role_obj = self.get_role_obj(lab_role_str)
                 await member.add_roles(lab_role_obj)
 
-            # Success!
             return True
         
-        # Student doesn't need to be added
-        return False
+        except Exception as e:
+
+            print(e)
+        
+            return False
+        
 
     async def help(self, msg):
 
         # Help command, sorry this isnt more automatic. 
         # You'll have to write it out for now
-        return await self.get_embed("help", ctx=msg, mention=msg.author.mention)
+        desc=f'''Hi, thanks for using {self.name}! 
+        
+        This bot was created by Claire Whittington. Try out the list of commands below:
+        
+        🤖💬
+        
+        '''
+
+        # iterate through the commands
+        for trigger, tuple in self.commands.items():
+            
+            # get desc
+            text = tuple[1]
+            admin_only = tuple[2]
+
+            if self._is_admin( msg.author ) or not admin_only:
+
+                desc += f"**{trigger}**: {text}\n"
+
+        return await self.get_embed("help", channel=msg.channel, desc=desc)
 
     async def initialize_guilds(self):
 
@@ -285,64 +323,139 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
     
         return student_dict
     
-    def update_database(self):
+    async def update_database(self, msg=None):
 
         # initialize variables
         student_dict = self.initialize_students()
+        insertions = 0
+        num_updates = 0
 
-        # Loop through courses
-        for integration_id, values in student_dict.items():
+        # try to update the db
+        try: 
 
-            # get course ID (int)
-            name = values["name"]
-            courseID = values["combo_id"]
-            labID    = values["lab_id"]
-            
-            # Skip test student
-            if name == "Test Student":
-                return
-            
-            # Handle main course
-            if courseID != None and not self.check_exists( Course, {"id": courseID} ):
-                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, courseID)
-                section = self.current_semester.get_lab_section(full_course_name)
-                self.insert(Course(id=courseID, name=full_course_name, section=section))
-            
-            elif not self.check_exists( Course, {"id": courseID} ):
-                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, courseID)
-                section = self.current_semester.get_lab_section(full_course_name)
-                self.update(Course(id=courseID, name=full_course_name, section=section))
+             # Loop through courses
+            for integration_id, values in student_dict.items():
 
-            # Handle lab
-            if labID != None and not self.check_exists( Course, {"id":labID} ):
-                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, labID)
-                section = self.current_semester.get_lab_section(full_course_name)
-                self.insert(Course(id=labID, name=full_course_name, section=section))
-            
-            elif self.check_exists( Course, {"id":labID} ):
-                full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, labID)
-                section = self.current_semester.get_lab_section(full_course_name)
-                self.insert(Course(id=labID, name=full_course_name, section=section))
-
-            # insert student if not in db
-            if not self.check_exists( Student, {"id":integration_id} ):
-                self.insert(Student(
-                                    id=integration_id, 
-                                    name=name, 
-                                    main_class=courseID, 
-                                    lab_class=labID
-                                    )
-                            )
+                # get course ID (int)
+                name = values["name"]
+                courseID = values["combo_id"]
+                labID    = values["lab_id"]
+                lab_section = None
                 
-            # Student is in db, update their info
-            else:
-                self.update(Student(
-                                    id=integration_id, 
-                                    name=name, 
-                                    main_class=courseID, 
-                                    lab_class=labID
+                # Skip test student
+                if name == "Test Student":
+                    continue
+                
+                '''
+                STUDENT HANDLING
+                '''
+
+                # updates for student
+                updates={
+                            "name":name, 
+                            "main_class":courseID, 
+                            "lab_class":labID
+                            } 
+                
+                # insert student if not in db
+                if not self.check_exists( Student, {"id":integration_id} ):
+
+                    self.insert(Student(
+                                        id=integration_id, 
+                                        name=name, 
+                                        main_class=courseID, 
+                                        lab_class=labID
+                                        )
+                                )
+                    
+                    insertions += 1
+                    
+                # Student is in db, update their info
+                elif self.needs_update(Student, record_id=integration_id, updates=updates):
+                                        # Define updates
+                    
+                    self.update(Student, record_id=integration_id, updates=updates)
+
+                    num_updates += 1
+
+                '''
+                MAIN COURSE HANDLING
+                '''
+
+                # Handle main course
+                if courseID != None:
+
+                    # Get the course name
+                    full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, courseID)
+
+                    # Define updates
+                    updates = {
+                            "name":full_course_name,
+                            }
+                    
+                    # Main course is not in the database yet
+                    if not self.check_exists( Course, {"id": courseID} ):
+                        
+                        # Insert it, where section = None
+                        self.insert(Course(id=courseID, name=full_course_name, section=None))
+                        insertions += 1
+
+                    elif self.needs_update(Course, record_id=courseID, updates=updates):
+                        self.update(Course, record_id=courseID, updates=updates)
+                        num_updates += 1
+
+                '''
+                LAB DATA HANDLING
+                '''
+
+                # Handle lab if exists
+                if labID != None:
+
+                    # Get the course info
+                    full_course_name = self.find_course_name_by_id(self.current_semester.my_courses, labID)
+                    lab_section = self.current_semester.get_lab_section(full_course_name)
+
+                    # Define updates
+                    updates = {
+                            "name":full_course_name,
+                            "section":lab_section
+                            }
+                    
+                    # Main course is not in the database yet
+                    if not self.check_exists( Course, {"id": labID} ):
+                        
+                        # Insert it, where section = None
+                        self.insert(Course(id=labID, name=full_course_name, section=lab_section))
+                        insertions += 1
+
+                    elif self.needs_update(Course, record_id=labID, updates=updates):
+                        self.update(Course, record_id=labID, updates=updates)
+                        num_updates += 1
+            
+        
+        # Error in updating database
+        except Exception as e:
+            
+            # Bot is not ready :(
+            self.ready = False
+
+            # Send failure embed
+            return await self.get_embed("update-database-failure", 
+                                            e=e)
+        
+        # Bot is now ready
+        self.ready = True
+
+        # get the summary
+        summary = self.summary()
+
+        # send the embed
+        return await self.get_embed("update-database-success",
+                                    course_count=summary["course_count"],
+                                    student_count=summary["student_count"],
+                                    insertions = insertions,
+                                    updates = num_updates
                                     )
-                            )
     
     def validate_channel(self, channel_name):
 
@@ -439,6 +552,9 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
     '''
     def __init__(self, name, client, prefix, dft_color, TOKEN):
 
+        # Define ready flag
+        self.ready = False
+
         # initialize important stuff
         self.client     = client    # discord client o bject
         self.name       = name      # str
@@ -491,21 +607,21 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
                             ),
                             # self.prefix + "process_students": (
                             #                     self.process_students,
-                            #                     "Process students - Kind of implemented",
+                            #                     "Process students",
                             #                     True, # is admin-only command
                             # ),
-                            self.prefix + "invite" : (
-                                                self.invite,
-                                                "Invite the bot to another server",
-                                                True # is admin-only command
-                            ),
+                            # self.prefix + "invite" : (
+                            #                     self.invite,
+                            #                     "Invite the bot to another server",
+                            #                     True # is admin-only command
+                            # ),
                             # self.prefix + "restart":(
                             #                     self.restart,
                             #                     "Restart Bot",
                             #                     True
 
                             # ),
-                            self.prefix + "force_update":(
+                            self.prefix + "update":(
                                                 self.update_database,
                                                 "Force-updates the database.",
                                                 True
