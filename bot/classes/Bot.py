@@ -99,8 +99,6 @@ class Bot( EmbedHandler, Canvas, SQLHandler ):
         # get member
         student = self.retrieve(Student, {"id":integration_id})[0]
 
-        print(student)
-
         if student.lab_class != None:
             lab = self.retrieve(Course, {"id":student.lab_class})[0]
             lab_section = lab.section
