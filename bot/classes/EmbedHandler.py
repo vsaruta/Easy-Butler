@@ -1,6 +1,7 @@
 import json
 import discord
 import config as cfg
+import datetime
 
 # Overarching handler
 class EmbedHandler:
@@ -10,6 +11,15 @@ class EmbedHandler:
         def __init__(self, *, channel=None, **kwargs):
             super().__init__(**kwargs)
             self.channel = channel
+
+        async def send(self):
+            """Sends the embed to the assigned channel."""
+            if self.channel is not None:
+                # Send the embed
+                async with self.channel.typing():
+                    await self.channel.send(embed=self)
+            else:
+                raise ValueError("Channel not set. Use set_channel(channel) to set a channel before sending.")
 
         def set_channel(self, channel):
             """Sets the destination channel for this embed."""
@@ -35,7 +45,7 @@ class EmbedHandler:
         with open(self._json_file, 'r') as embed_file:
             self.messages = json.load(embed_file)
 
-    async def get_embed(self, key, ctx=None, **kwargs):
+    async def get_embed(self, key, channel=None, **kwargs):
         """
         Retrieves an embed by key, resolves the channel by name, and formats with kwargs.
 
@@ -62,10 +72,10 @@ class EmbedHandler:
         channel_name = data.get("channel")
 
         if channel_name == "ANYWHERE":
-            if ctx:
-                channel = ctx.channel  # Use the current message's channel
+            if channel:
+                dest = channel  # Use the current message's channel
             else:
-                raise ValueError("ctx must be provided when using 'ANYWHERE'.")
+                raise ValueError("channel object must be provided when sending 'ANYWHERE'.")
         else: 
             channel = discord.utils.get(self.guild.text_channels, name=channel_name)
             if not channel:
@@ -76,7 +86,8 @@ class EmbedHandler:
             title=data.get("title").format(**kwargs),             # format the title w args
             description=data.get("description").format(**kwargs), # format the body w args
             color=self._color_map[(data.get("color"))],           # Get the hex color
-            channel=channel                                       # set destination channel
+            channel=channel,                                      # set destination channel
+            timestamp=datetime.datetime.now(tz=datetime.timezone.utc)             
         )
 
         return embed
