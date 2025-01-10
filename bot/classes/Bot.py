@@ -201,7 +201,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         async for msg in channel.history():
             
             # handle the welcome channel
-            embed = self.handle_welcome_channel( msg, guild=guild, student_role=student_role)
+            embed = await self.handle_welcome_channel( msg, guild=guild, student_role=student_role)
 
             # send the embed
             if embed != None:
@@ -222,11 +222,11 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
     async def handle_welcome_channel(self, msg, guild=None, student_role=None):
 
         # initialize variables
-        args         = msg.content.split()
+        args = msg.content.split()
 
         # initialize guild if not added 
         if guild==None:
-            guild        = self.get_custom_guild( msg.guild )
+            guild = self.get_custom_guild( msg.guild )
 
         # initialize student role if not added
         if student_role == None:
@@ -236,7 +236,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         member = await msg.guild.fetch_member(msg.author.id)
 
         # ignore messages sent by staff
-        if self._is_staff( msg.author ):
+        if self._is_staff( msg.author ) or msg.author == self.client:
             print(f"Ignoring message sent by {msg.author.name}")
             return None
 
@@ -545,12 +545,12 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                             # ),
                             self.prefix + "prune":(
                                                 self.prune,
-                                                "Force bot to leave all inactive discords. NOTE: NOT IMPLEMENTED",
+                                                "Force bot to leave all inactive discords. NOTE: NOT IMPLEMENTED BUT SUPER EASY",
                                                 True
                             ),
                             self.prefix + "process":(
                                                 self.manual_welcome,
-                                                "Manually process every student in the #welcome channel. NOTE: THIS DOESNT REALLY WORK RN",
+                                                "Manually process every student in the #welcome channel. NOTE: Weird bug happening here",
                                                 True
                             ),
                             self.prefix + "update":(

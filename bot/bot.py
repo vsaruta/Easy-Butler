@@ -23,7 +23,10 @@ def run_discord_bot():
     # Task loop to update data periodically
     @tasks.loop(hours=cfg.HOURS_UPDATE)  
     async def passive_update_database():
-        bot._update_database() 
+        student_insertions, course_insertions = bot._update_database() 
+
+        if bot.dbg:
+            print(f"Updated DB: {student_insertions} students inserted, {course_insertions} courses inserted.")
 
     @client.event
     async def on_guild_join(guild): # check if we need to update bot on a new join
