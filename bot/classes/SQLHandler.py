@@ -1,11 +1,18 @@
 from sqlmodel import SQLModel, Field, create_engine, Session, Relationship, select
+from typing import Optional
+from sqlalchemy.orm import selectinload
 
 # Custom handler
 class SQLHandler:
-    def __init__(self) -> None:
-        self.engine = create_engine('sqlite:///database/CS126.db')
-        SQLModel.metadata.drop_all(self.engine) # TESTING PURPOSES
-        SQLModel.metadata.create_all(self.engine)
+
+    def __init__(self,  dbg_path, dbg=False, reset=False) -> None:
+        self.engine = create_engine(f'sqlite:///{dbg_path}')
+        self.dbg = dbg
+
+        if reset:
+            print("Resetting database...")
+            SQLModel.metadata.drop_all(self.engine) # TESTING PURPOSES
+            SQLModel.metadata.create_all(self.engine)
 
     def check_exists(self, model: SQLModel, filters: dict) -> bool:
         """
@@ -39,6 +46,10 @@ class SQLHandler:
         """
         model = type(model_instance)
         filters = {"id": model_instance.id}  # Assuming 'id' is the unique field
+
+        if model == Student:
+            filters["course_id"] = model_instance.course_id
+
         if self.check_exists(model, filters):
             return False
         else:
@@ -134,31 +145,43 @@ class SQLHandler:
             list[SQLModel]: A list of records that match the filters.
         """
         with Session(self.engine) as session:
-            # Start with a base query
-            query = select(model)
+            try:
+                # Start with a base query
+                query = select(model).options(selectinload("*"))
 
-            # Apply filters if provided
-            if filters:
-                for key, value in filters.items():
-                    # Use getattr to dynamically access model fields
-                    query = query.where(getattr(model, key) == value)
+                # Apply filters if provided
+                if filters:
+                    for key, value in filters.items():
+                        if not hasattr(model, key):
+                            raise AttributeError(f"{key} is not a valid attribute of {model.__name__}")
+                        query = query.where(getattr(model, key) == value)
 
-            # Execute the query and return results as a list
-            results = session.exec(query).all()
-            return results
+                # Execute the query and return results
+                results = session.exec(query).all()
+                return results
+
+            except Exception as e:
+                print(f"Error during query: {e}")
+                return []
 
 # Student Table
 class Course(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     name: str = Field(max_length=100, default=None )
     section: str = Field(max_length=3, default=None, nullable=True)
+    term: str = Field(max_length=4, default=None)
+
+    students: list["Student"] = Relationship(back_populates="course")
 
 class Student(SQLModel, table=True):
     id: str = Field(max_length=10, default=None, primary_key=True)
+    course_id: int = Field(default=None, foreign_key="course.id", primary_key=True)
     name: str = Field(max_length=100, default=None)
-    main_class: int = Field(default=None, foreign_key="course.id", nullable=True)
-    lab_class: int = Field(default=None, foreign_key="course.id",  nullable=True)
+    sis_id: str = Field(max_length=100, default=None)
+    pronouns: str = Field(max_length=100, default=None, nullable=True)
 
+    # add relationship here
+    course: Optional[Course] = Relationship(back_populates="students")
 
 def _main():
 

@@ -2,7 +2,7 @@
 
 # Check if the script is sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    echo "Error: This script must be sourced. Run it as:"
+    echo "Error: Bot runs in a virtual environment. This setup script must be sourced. Run it as:"
     echo "source setup.sh"
     exit 1
 fi

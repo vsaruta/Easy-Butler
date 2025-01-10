@@ -3,16 +3,22 @@ claire=343857226982883339
 vova=255168023751688193
 owner=claire
 
+# debug status
+dbg = True 
+reset_db = True
+
 #json file - for discord embed formatting
 json_file = "json/embeds.json"
 
-# strings
+# path to database
+db_path = "database/new_CS126.db"
+
+# bot strings
 name="LunaBot"
 prefix="luna."
-# welcome_channel = "welcome"
-# log_channel = "bot_logs"
 student_role = "Students"
-# all channel strings
+
+# channel strings
 welcome_channel_str          = "welcome"
 added_students_channel_str   = "processed-students"
 admin_channel_str            = "admin-commands"
@@ -29,7 +35,6 @@ staff_list=admin_list + []
 
 # how often the bot updates (in hours)
 HOURS_UPDATE = 12
-SECONDS_UPDATE = 1
 
 '''
 # old config stuff

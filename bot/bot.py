@@ -15,17 +15,15 @@ def run_discord_bot():
     # initialize variables
     name      = cfg.name
     prefix    = cfg.prefix
-    dft_color = cfg.dft_color
     token     = sc.TOKEN
 
     # initialize bot
-    bot = Bot(name, client, prefix, dft_color, token)
+    bot = Bot(name, client, prefix, token)
 
     # Task loop to update data periodically
     @tasks.loop(hours=cfg.HOURS_UPDATE)  
     async def passive_update_database():
-        embed = await bot.update_database() 
-        await embed.send()
+        bot._update_database() 
 
     @client.event
     async def on_guild_join(guild): # check if we need to update bot on a new join
@@ -46,30 +44,18 @@ def run_discord_bot():
 
             # Print bot is now running
             print(f"{bot.name} is now running!")
-
-            # Start database updating coroutine
-            print("Updating database...")
             passive_update_database.start()
 
-            # send the start update
-            embed = await bot.get_embed("bot-start")
-            await embed.send()
-
         else:
+            print( "Bot is not part of any guilds.")
+            print( "Invite with link:")
+            print( "\t" + bot.invite_link )
             print(f"Shutting down {bot.name}...")
             await client.close() # this doesn't close all async threads, but it works for now
 
     # Message Handler
     @client.event
     async def on_message(msg):
-
-        # Bot is not ready to handle messages yet as it hasn't synced yet
-        if not bot.ready:
-
-            embed = await bot.get_embed("bot-not-ready", 
-                                  channel=msg.channel,
-                                  mention=msg.author.mention)
-            return
 
         # Don't listen to self
         if msg.author == client.user or msg.attachments:
@@ -88,24 +74,22 @@ def run_discord_bot():
             
             # handle the command, grab the embed
             embed = await bot.handle_command( msg )
-
-            # Send 
-            if embed != None:
-                await embed.send()
-            
+            await send_embed( embed, msg.guild, msg.channel )
             return
 
         # realtime - specifically check for welcome channel
-        if msg.channel.id == bot.current_semester.welcome_channel_obj.id:
+        if msg.channel.name == bot.welcome_channel_str:
 
             # handle student
             embed = await bot.handle_welcome_channel( msg )
-
-            if embed != None:
-                await embed.send()
-
+            await send_embed( embed, msg.guild, msg.channel )
             return 
 
     # Run Bot with Token
         # Should be  the very last command inside of run_discord_bot 
     client.run( bot.token )
+
+async def send_embed( embed, guild, channel ):
+    # Send 
+    if embed != None:
+        await embed.send( guild, channel )

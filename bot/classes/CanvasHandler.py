@@ -1,7 +1,7 @@
 import requests
 from secret import API_KEY
 
-class Canvas:
+class CanvasHandler:
 
     def __init__(self) -> None:
     
@@ -20,6 +20,20 @@ class Canvas:
             "page": self.page
         }
 
+    def get_all_courses_with( self, class_code ):
+        '''
+        Finds and returns all course objects from NAU with the specificied course code in their names. 
+        '''
+
+        courses = self.get_my_courses()
+        search_return = []
+
+        for course in courses:
+
+            if class_code in course["name"]:
+                search_return.append( course )
+
+        return search_return
     
     def get_my_courses(self):
 
@@ -40,7 +54,7 @@ class Canvas:
         
         return courses
 
-    def retrieve_students(self, course_id):
+    def get_students(self, course_id):
         
         # initialize variables 
         url = self.base_url + f'/courses/{course_id}/students' 
@@ -68,7 +82,7 @@ class Canvas:
 
         return students
     
-    def retrieve_tas(self, course_id):
+    def get_tas(self, course_id):
         ta_list = []
         return ta_list
     
@@ -114,11 +128,11 @@ class Canvas:
     def _resp_200(self, resp):
         return resp.status_code == 200
 
-def _main():
 
-    canvas = Canvas()
-    # combo_class = 28980
-    # result = canvas.get(combo_class)
-    # print(result)
 
-#_main()
+if __name__ == "__main__":
+
+    API_KEY = "19664~re629MhEknKm8c2mnQnCCGCTW38zWQ63NnLRaYvyxumAKC8wH3GwrP8Ut8LMwkXV"
+    canvas = CanvasHandler()
+    result = canvas.get_students( 18253 )
+    print(result)

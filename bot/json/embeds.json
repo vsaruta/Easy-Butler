@@ -14,7 +14,8 @@
                 "title": "Discord embed title",
                 "description": "Discord embed description",
                 "color": "Discord embed color",
-                "channel": "Channel for embed to be sent in"
+                "channel": "Channel for embed to be sent in",
+                "footer": "Footer for embed"
             },
 
             "#valid-channels":{
@@ -24,7 +25,7 @@
                 "#admin_log_channel_str"  :      "admin-logs",
                 "#student_cmds_channel_str" :    "student-commands",
                 "#student_cmds_log_channel_str": "student-command-logs",
-                "#send-anywhere": "ANYWHERE"
+                "#send-anywhere": ""
             }
         },
 
@@ -37,91 +38,126 @@
         "title": "",
         "description": "",
         "color": "",
-        "channel": ""
+        "channel": "",
+        "footer": ""
     },
 
     "added-student-failure":{
         "title": "Failed to Process Student",
-        "description": "**School ID**: {integration_id}\n**Discord User:**: {author.mention}",
+        "description": "**School ID**: {integration_id}\n**Discord User:**: {mention}",
         "color": "FAILURE",
-        "channel": "processed-students"
+        "channel": "processed-students",
+        "footer": ""
+    },
+
+    "added-student-failure-reply":{
+        "title": "Unknown User ID",
+        "description": "Sorry {mention}, I could not find any student enrolled under this ID. Please enter the school ID found in your NAU email.",
+        "color": "FAILURE",
+        "channel": "",
+        "footer": ""
     },
 
     "added-student-success":{
         "title": "Added New Student",
         "description":"**Name**: {name}\n**School ID**: {integration_id}\n**Lab Section:** {lab_section}\n**Discord User:**: {mention}",
         "color": "SUCCESS",
-        "channel": "processed-students"
+        "channel": "processed-students",
+        "footer": ""
     },
 
     "bot-not-ready":{
         "title": "Bot Setting Up",
         "description":"Sorry, {mention}. This bot is still in the process of setting up. Try again in a few minutes",
         "color": "DEFAULT",
-        "channel": "ANYWHERE"
+        "channel": "",
+        "footer": ""
     },
 
     "bot-start":{
         "title": "Started Bot",
         "description":"",
         "color": "DEFAULT",
-        "channel": "admin-logs"
+        "channel": "admin-logs",
+        "footer": ""
     },
 
     "help":{
         "title": "Help from lunaBot!",
         "description": "{desc}",
         "color": "DEFAULT",
-        "channel": "ANYWHERE"
+        "channel": "",
+        "footer": ""
     },
 
     "invalid-command":{
         "title": "Invalid Command",
         "description": "Unknown command. Find a list of commands with {prefix}help.",
         "color": "FAILURE",
-        "channel": "ANYWHERE"
+        "channel": "",
+        "footer": ""
     },
 
     "invalid-integration-id":{
         "title": "School ID Not Found",
         "description": "Sorry {mention}, we could not find a student enrolled under the id {integration_id}. Please try again.",
         "color": "FAILURE",
-        "channel": "welcome"
+        "channel": "welcome",
+        "footer": ""
     },
 
     "key-failure":{
         "title": "Canvas Key Failure",
         "description": "Attempt by {mention}: Unable to sey new Canvas key. ",
         "color": "FAILURE",
-        "channel": "admin-logs"
+        "channel": "admin-logs",
+        "footer": ""
     },
 
     "key-sucess":{
         "title": "Canvas Key Success",
         "description": "Attempt by {mention}: Canvas key changed.",
         "color": "SUCCESS",
-        "channel": "admin-logs"
+        "channel": "admin-logs",
+        "footer": ""
+    },
+    "lookup-student-success":{
+        "title": "Found Student",
+        "description": "{desc}",
+        "color": "SUCCESS",
+        "channel": "",
+        "footer": ""
+    },
+
+    "lookup-student-failure":{
+        "title": "Student Not Found",
+        "description": "Sorry, no student was found in the database with this ID.",
+        "color": "FAILURE",
+        "channel": "",
+        "footer": ""
     },
 
     "unauthorized-user":{
         "title": "Unauthorized User",
         "description": "Sorry {mention}, you are not authorized to use this command.",
         "color": "FAILURE",
-        "channel": "ANYWHERE"
-            
+        "channel": "",
+        "footer": ""
     },
 
     "update-database-failure":{
         "title": "Database Failire",
         "description": "Unable to update the database: {e}",
         "color": "FAILURE",
-        "channel": "admin-logs"
+        "channel": "admin-logs",
+        "footer": ""
     },
     
     "update-database-success":{
         "title": "Updated Database",
-        "description": "Database has been successfully updated.\n\n**Summary**\n- {course_count} Courses\n- {student_count} Students\n({insertions} insertions, {updates} updates)",
+        "description": "Database has been successfully updated.\n\n**Summary**\n- {student_insertions} students inserted\n - {course_insertions} courses inserted",
         "color": "SUCCESS",
-        "channel": "admin-logs"
+        "channel": "admin-logs",
+        "footer": ""
     }
 }
