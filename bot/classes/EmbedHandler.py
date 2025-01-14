@@ -18,6 +18,7 @@ class EmbedHandler ( GuildHandler ):
             self.guild = None
             self.file_obj = None
             self.reply_to = None
+            self.img      = None
 
         def set_channel_obj( self, msg_channel:discord.channel ):
         
@@ -30,7 +31,6 @@ class EmbedHandler ( GuildHandler ):
             # A channel has been named
             else:
                 self.channel_obj = self.guild.get_channel_obj( self.channel_name )
-
         def set_file(self, filepath: str):
             """
             Embeds an image into the embed from the given file path.

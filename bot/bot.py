@@ -21,6 +21,10 @@ def run_discord_bot():
     # initialize bot
     bot = Bot(name, client, prefix, token)
 
+    @tasks.loop(hours=cfg.HOURS_UPDATE)  
+    async def passive_prune():
+        await bot.prune( msg=None )
+
     # Task loop to update data periodically
     @tasks.loop(hours=cfg.HOURS_UPDATE)  
     async def passive_update_database():
@@ -50,6 +54,7 @@ def run_discord_bot():
 
             # Print bot is now running
             print(f"{bot.name} is now running!")
+            passive_prune.start()
             passive_update_database.start()
 
         # bot may be ready but is not in any guilds :(

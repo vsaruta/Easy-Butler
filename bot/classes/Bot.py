@@ -15,8 +15,8 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
 
     async def handle_command( self, msg ):
 
-        # initialize variables
-        author_id = msg.author.id
+        # initialize variabless
+        is_admin =  await self.is_admin( msg.author )
 
         # Get command 
         argv = msg.content.split()
@@ -26,10 +26,10 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         if command in self.commands.keys():
 
             # Grab the command tuple
-            selected_option = self.commands.get( command ) 
+            selected_option = self.commands.get( command )
 
             # Ensure permissions, currently owner-only
-            if not await self.is_admin( msg.author ) and selected_option[2] == True:
+            if not is_admin and selected_option[3] == True:
 
                 embed = self.get_embed("unauthorized-user", 
                                        channel = msg.channel,
@@ -48,6 +48,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         # Command not in the command dictionary
         else:  
             embed = self.get_embed("invalid-command", 
+                                            reply_to=msg,
                                             prefix = self.prefix)
             # embed.title = "Invalid Command"
             # embed.description = "Command not recognized."
@@ -85,6 +86,9 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         # ensure channel exists
         if channel_obj != None:
 
+            # send thumbs up
+            await msg.add_reaction( cfg.thumbs_up )
+
             # delete messages
             deleted = await guild.purge_channel( channel_obj, delete_pinned=False )
 
@@ -105,6 +109,9 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         '''
         User command to manually update the database.
         '''
+
+        # send thumbs up
+        await msg.add_reaction( cfg.thumbs_up )
 
         if self.update_database():
 
@@ -171,9 +178,11 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                                 ⋅ Usage: `{example_usage}`\n
                         '''
 
-        return self.get_embed("help", 
+        embed = self.get_embed("help", 
                               reply_to=msg,
                               desc=desc)
+        embed.set_thumbnail( url=self.client.user.display_avatar.url )
+        return embed
     
     async def lookup( self, msg):
         '''
@@ -182,10 +191,18 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         # initialize variables
         desc = ""
         args = msg.content.split()
+
+        if len( args ) < 2:
+
+            return self.get_embed( "too-few-args-lookup",
+                                  reply_to=msg )
         guild = self.get_custom_guild( msg.guild )
         filters = {
             "id": args[1] # integration ID
         }
+
+                # send thumbs up
+        await msg.add_reaction( cfg.thumbs_up )
         
         # get records for student
         records = self.retrieve_student( filters )
@@ -243,8 +260,12 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
 
         # initialize variables
         guild = self.get_custom_guild( original_msg.guild )
+        added=0
         channel = guild.get_channel_obj( self.welcome_channel_str )
         student_role = guild.get_role_obj( self.student_role_str )
+
+        # send thumbs up
+        await original_msg.add_reaction( cfg.thumbs_up )
 
         # loop through the channel
         async for msg in channel.history( limit = None ):
@@ -281,17 +302,35 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
 
             # send the embed
             if embed != None:
+                added += 1
                 await embed.send( original_msg.guild )
-        
 
-        # return Nothing
-        return None
+        # return embed
+        embed = self.get_embed( "process-students-success",
+                              reply_to=original_msg,
+                              added=added
+                              )
+        return embed
 
     async def prune(self, msg):
         '''
         User command to prune inactive servers
         '''
-        return None
+
+        for custom_guild in self.custom_guilds:
+
+            guild = custom_guild.guild
+
+            if not custom_guild.is_active():
+
+                embed = self.get_embed( "leaving-server" )
+
+                if custom_guild.get_channel_obj( embed.channel_name ):
+
+                    await embed.send( guild )
+
+                await guild.leave()
+
     
     '''
     LUNABOT PUBLIC FUNCTIONS, NON-USER COMMANDS
@@ -429,13 +468,12 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
 
         # initialize variables
         args = msg.content.lower().split()
+        is_staff = await self.is_staff( msg.author )
         added = False
 
         # initialize guild if not added 
         if guild==None:
             guild = self.get_custom_guild( msg.guild )
-
-        assert( guild != None )
 
         # initialize student role if not added
         if student_role == None:
@@ -445,11 +483,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         member = await self.get_member_by_msg( msg )
 
         # ignore messages sent by staff
-        if await self.is_staff( msg.author ) or msg.author == self.client:
-            return None
-
-        # Ignore if member already has student role
-        if student_role in member.roles:
+        if (is_staff) or (msg.author == self.client) or (student_role in member.roles):
             return None
         
         # get integration_id from message
@@ -470,6 +504,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
             # if so, process student
                 # function: self._process_student()
             embed = await self._process_student( member, records, guild )
+            embed.set_thumbnail( url=msg.author.display_avatar.url )
             added = True
         
         # otherwise, no records found
@@ -698,12 +733,12 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                             #                     "Restart Bot",
                             #                     True
                             # ),
-                            self.prefix + "prune":(
-                                                self.prune,
-                                                "Force bot to leave all inactive discords. NOTE: NOT IMPLEMENTED BUT SUPER EASY",
-                                                f"{self.prefix}prune", # example usage
-                                                True
-                            ),
+                            # self.prefix + "prune":(
+                            #                     self.prune,
+                            #                     "Force bot to leave all inactive discords. NOTE: NOT IMPLEMENTED BUT SUPER EASY",
+                            #                     f"{self.prefix}prune", # example usage
+                            #                     True
+                            # ),
                             self.prefix + "clear":(
                                                 self.clear_channel,
                                                 f"Clear all messages in a given channel except for pinned messages. Usage: {prefix}.clear <#channel>",

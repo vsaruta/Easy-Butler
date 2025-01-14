@@ -49,7 +49,6 @@ class GuildHandler():
             
         async def get_admins( self, ids=False ):
             admins = []
-
             # Async iterate over the members
             async for member in self.guild.fetch_members():
                 if member.guild_permissions.administrator:

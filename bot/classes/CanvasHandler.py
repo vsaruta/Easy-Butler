@@ -106,7 +106,7 @@ class CanvasHandler:
             return False
 
     def set_api_key(self, api_key, verbose=False):
-        if self.validate_api_key(key=api_key, verbose=verbose):
+        if self.validate_api_key(key=api_key, verbose=False):
             self.API_KEY=api_key
             return True
         return False

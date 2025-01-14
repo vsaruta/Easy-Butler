@@ -15,7 +15,8 @@
                 "description": "Discord embed description",
                 "color": "Discord embed color",
                 "channel": "Channel for embed to be sent in",
-                "footer": "Footer for embed"
+                "footer": "Footer for embed",
+                "image": "Image for embed"
             },
 
             "#valid-channels":{
@@ -39,12 +40,13 @@
         "description": "",
         "color": "",
         "channel": "",
-        "footer": ""
+        "footer": "",
+        "img_url":""
     },
 
     "added-student-failure":{
         "title": "Failed to Process Student",
-        "description": "**School ID**: {integration_id}\n**Discord User:**: {mention}",
+        "description": "**School ID**: {integration_id}\n**Discord User**: {mention}",
         "color": "FAILURE",
         "channel": "processed-students",
         "footer": ""
@@ -60,7 +62,7 @@
 
     "added-student-success":{
         "title": "Added New Student",
-        "description":"**Name**: {name}\n**School ID**: {integration_id}\n**Lab Section:** {lab_section}\n**Discord User:**: {mention}",
+        "description":"**Name**: {name}\n**School ID**: {integration_id}\n**Lab Section:** {lab_section}\n**Discord User**: {mention}",
         "color": "SUCCESS",
         "channel": "processed-students",
         "footer": ""
@@ -95,7 +97,7 @@
         "description":"Successfully deleted {deleted} messages in {channel_name}",
         "color": "SUCCESS",
         "channel": "",
-        "footer": ""
+        "footer": "Bot will not clear pinned messages!"
     },
 
     "help":{
@@ -137,6 +139,24 @@
         "channel": "admin-logs",
         "footer": ""
     },
+
+    "leaving-server":{
+        "title": "Leaving server",
+        "description": "This server has been deemed inactive, so bot has left.",
+        "color": "DEFAULT",
+        "channel": "admin-logs",
+        "footer": ""
+    },
+
+    "left-servers":{
+        "title": "Left {left} Servers",
+        "description": "{desc}",
+        "color": "SUCCESS",
+        "channel": "admin-logs",
+        "footer": ""
+        
+    },
+
     "lookup-student-success":{
         "title": "Found Student",
         "description": "{desc}",
@@ -152,9 +172,26 @@
         "channel": "",
         "footer": ""
     },
+
+    "process-students-success":{
+        "title": "Success",
+        "description": "Welcomed {added} new students.",
+        "color": "SUCCESS",
+        "channel": "",
+        "footer": ""
+    },
+
     "too-few-args-clear":{
         "title": "Too Few Arguments",
         "description": "This command is invalid. Please provide the channel to clear as a second parameter. Usage: luna.clear <#channel>",
+        "color": "FAILURE",
+        "channel": "",
+        "footer": ""
+    },
+    
+    "too-few-args-lookup":{
+        "title": "Too Few Arguments",
+        "description": "This command is invalid. Please a student ID as a parameter. Usage: luna.lookup <student id>",
         "color": "FAILURE",
         "channel": "",
         "footer": ""

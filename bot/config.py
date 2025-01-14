@@ -39,6 +39,9 @@ staff_roles = [
                 "Lab Instructor"
                 ]
 
+# emojis
+thumbs_up = '👍'
+
 '''
 # old config stuff
 #CSV_FILE = "cs126_student_list.csv"
