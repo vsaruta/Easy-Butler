@@ -29,7 +29,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
             selected_option = self.commands.get( command ) 
 
             # Ensure permissions, currently owner-only
-            if author_id != self.owner and selected_option[2] == True:
+            if not await self.is_admin( msg.author ) and selected_option[2] == True:
 
                 embed = self.get_embed("unauthorized-user", 
                                        channel = msg.channel,
@@ -58,6 +58,49 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
     '''
     LUNABOT USER COMMANDS
     '''
+    async def clear_channel( self, msg ):
+
+        # initialize variables
+        args = msg.content.lower().split()
+        guild = self.get_custom_guild(msg.guild)
+
+        # ensure enough args
+        if len( args ) < 2:
+
+            return self.get_embed( "too-few-args-clear",
+                                  reply_to=msg 
+                                  )
+        
+        # get channel object
+        channel_name = args[1].strip("#<>") # remove #<> if applicable
+
+        # is channel ID
+        if channel_name.isnumeric():
+            channel_obj = guild.get_channel_obj_by_id( int(channel_name) )
+
+        # is channel name
+        else:
+            channel_obj = guild.get_channel_obj( channel_name )
+
+        # ensure channel exists
+        if channel_obj != None:
+
+            # delete messages
+            deleted = await guild.purge_channel( channel_obj, delete_pinned=False )
+
+            # return success
+            return self.get_embed( "clear-success",
+                                    reply_to=msg,
+                                    deleted=deleted,
+                                    channel_name=channel_name
+                                )
+
+        # channel does not exist, return clear error
+        return self.get_embed( "clear-failure",
+                        reply_to=msg,
+                        channel_name=channel_name)
+
+
     async def force_update( self, msg ):
         '''
         User command to manually update the database.
@@ -73,6 +116,8 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                                             reply_to = msg
                                         )
 
+        return embed
+    
     async def handle_api_set( self, msg ):
         '''
         User command to set a new API key: currently stored in program memory, not environmental
@@ -113,18 +158,22 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         🤖💬
         '''
 
+        # calculate admin status
+        is_admin = await self.is_admin( msg.author )
+
         # iterate through the commands
-        for trigger, tuple in self.commands.items():
-            
-            # get desc
-            text = tuple[1]
-            admin_only = tuple[2]
+        for trigger, (command, description, example_usage, admin_only ) in self.commands.items():
 
-            if self._is_admin( msg.author ) or not admin_only:
+            if is_admin or not admin_only:
 
-                desc += f"**{trigger}**: {text}\n"
+                desc += f''' ➭ **{trigger}**
+                                ⋅ {description}
+                                ⋅ Usage: `{example_usage}`\n
+                        '''
 
-        return self.get_embed("help", channel=msg.channel, desc=desc)
+        return self.get_embed("help", 
+                              reply_to=msg,
+                              desc=desc)
     
     async def lookup( self, msg):
         '''
@@ -192,20 +241,48 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
 
     async def manual_welcome( self, original_msg ):
 
-        # grab associated guild
+        # initialize variables
         guild = self.get_custom_guild( original_msg.guild )
         channel = guild.get_channel_obj( self.welcome_channel_str )
         student_role = guild.get_role_obj( self.student_role_str )
 
         # loop through the channel
-        async for msg in channel.history():
-            
-            # handle the welcome channel
-            embed = await self.handle_welcome_channel( msg, guild=guild, student_role=student_role)
+        async for msg in channel.history( limit = None ):
+
+            # reset embed variable
+            embed = None
+
+            # check if sent by botself  
+                # delete msg if pinged student is a student
+            if msg.author == self.client.user:
+
+                # roll thru embeds
+                for iter_embed in msg.embeds:
+
+                    # extract member from embed desc
+                    discord_id = strings.get_discord_id( iter_embed.description )
+
+                    # continue if no ID found in this specific message
+                    if discord_id == None:
+                        continue
+
+                    # grab member in discord
+                    member = await msg.guild.fetch_member( int(discord_id) )
+
+                    # check if member has student role
+                    if student_role in member.roles:
+                        
+                        # delete message
+                        await msg.delete()
+
+            else:
+                # handle the welcome channel
+                embed = await self.welcome( msg, guild=guild, student_role=student_role)
 
             # send the embed
             if embed != None:
                 await embed.send( original_msg.guild )
+        
 
         # return Nothing
         return None
@@ -219,74 +296,69 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
     '''
     LUNABOT PUBLIC FUNCTIONS, NON-USER COMMANDS
     '''
-    async def handle_welcome_channel(self, msg, guild=None, student_role=None):
+    async def delete_embeds_in( self, channel, text=None, where=None ):
 
-        # initialize variables
-        args = msg.content.split()
+        # ensure lowercase
+        if text != None:
+            text = text.lower()
 
-        # initialize guild if not added 
-        if guild==None:
-            guild = self.get_custom_guild( msg.guild )
+        # loop through channel history
+        async for msg in channel.history( limit = None ):
 
-        # initialize student role if not added
-        if student_role == None:
-            student_role = guild.get_role_obj( self.student_role_str )
-        
-        # get member object
-        member = await msg.guild.fetch_member(msg.author.id)
+            # look for text, where
+            if text:
+                await self.delete_embed_with( msg, text, where )
+            
+            # just delete the message
+            else:
+                await msg.delete()
 
-        # ignore messages sent by staff
-        if self._is_staff( msg.author ) or msg.author == self.client:
-            print(f"Ignoring message sent by {msg.author.name}")
-            return None
+    async def delete_embed_with(self, msg, text, where=None):
+        """
+        Deletes messages containing specific text in the specified field of embeds.
 
-        # Ignore if member already has student role
-        if student_role in member.roles:
-            print("Student already processed")
-            return None
-        
-        # get integration_id from message
-        integration_id = args[0]
+        Parameters:
+            msg (discord.Message): The message object to process.
+            text (str): The text to search for.
+            where (str): The field to search in (e.g., "description", "title"). Defaults to None (search all fields).
+        """
+        # loop through embeds
+        for embed in msg.embeds:
 
-        # create filters to find student
-        filters = {
-                "id":integration_id
-        }
+            # Normalize the `where` parameter for case-insensitivity
+            where = where.lower() if where else None
 
-        # retrieve records for student ID - Include, integration ID, and term 
-            # records could include: Main class, one (?) lab section
-        records = self.retrieve_student( filters )
+            # Check the specified field or all fields if `where` is None
 
-        # check length of records > 0
-        if len( records ) > 0:
+            # "description"
+            if where == "description" and text.lower() in (embed.description or "").lower():
+                await msg.delete()
+                return
+            
+            # "title"
+            elif where == "title" and text.lower() in (embed.title or "").lower():
+                await msg.delete()
+                return
+            
+            # "footer"
+            elif where == "footer" and text.lower() in (embed.footer.text or "").lower():
+                await msg.delete()
+                return
 
-            # if so, process student
-                # function: self._process_student()
-            embed = await self._process_student( member, records, guild )
+            # "author"
+            elif where == "author" and text.lower() in (embed.author.name or "").lower():
+                await msg.delete()
+                return
 
-            # # create success embed
-            # embed = self.get_embed( "added-student-success" )
-        
-        # otherwise, no records found
-            # create failure embed
-        else:
-
-            embed = self.get_embed( "added-student-failure-reply",
-                                    reply_to=msg,
-                                    mention = msg.author.mention
-                                   )
-            await embed.send( msg.guild, msg.channel )
-            embed = self.get_embed( "added-student-failure",
-                                            # reply_to=msg,
-                                            integration_id=msg.content,
-                                            mention = msg.author.mention
-                                        )
-        # delete student message 
-        await msg.delete()
-
-        # return embed
-        return embed
-    
+            # where not specified
+            elif where is None:  # Search all fields
+                if (text.lower() in (embed.description or "").lower() or
+                        text.lower() in (embed.title or "").lower() or
+                        text.lower() in (embed.footer.text or "").lower() or
+                        text.lower() in (embed.author.name or "").lower()):
+                    await msg.delete()
+                    return
+                
     async def initialize_guilds( self ):
 
         # initialize variables
@@ -299,10 +371,21 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
             new_guild = self.create_guild( guild )
 
             # add the new guild to list of guilds
-            self.add_custom_guild( new_guild )
-
+            self.add_custom_guild( new_guild, verbose=self.dbg, verify=False )
+                
         # return success
         return len( guilds ) > 0
+    
+    def verify_guilds( self ):
+
+        for guild in self.custom_guilds:
+
+            if not guild.validate( verbose = self.dbg ):
+
+                return False
+            
+        return True
+        
 
     def initialize_students( self, course_id ):
 
@@ -332,7 +415,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                                                 }
         # return the student dict
         return student_dict
-    
+        
     async def update_database( self, msg ):
 
         student_insertions, course_insertions = self._update_database()
@@ -342,6 +425,79 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                               student_insertions=student_insertions,
                               course_insertions=course_insertions)
         
+    async def welcome(self, msg, guild=None, student_role=None):
+
+        # initialize variables
+        args = msg.content.lower().split()
+        added = False
+
+        # initialize guild if not added 
+        if guild==None:
+            guild = self.get_custom_guild( msg.guild )
+
+        assert( guild != None )
+
+        # initialize student role if not added
+        if student_role == None:
+            student_role = guild.get_role_obj( self.student_role_str )
+        
+        # get member object
+        member = await self.get_member_by_msg( msg )
+
+        # ignore messages sent by staff
+        if await self.is_staff( msg.author ) or msg.author == self.client:
+            return None
+
+        # Ignore if member already has student role
+        if student_role in member.roles:
+            return None
+        
+        # get integration_id from message
+        integration_id = args[0]
+
+        # create filters to find student
+        filters = {
+                "id":integration_id
+        }
+
+        # retrieve records for student ID - Include, integration ID, and term 
+            # records could include: Main class, one (?) lab section
+        records = self.retrieve_student( filters )
+
+        # check length of records > 0
+        if len( records ) > 0:
+
+            # if so, process student
+                # function: self._process_student()
+            embed = await self._process_student( member, records, guild )
+            added = True
+        
+        # otherwise, no records found
+            # create failure embed
+        else:
+            
+            # reply to student
+            embed = self.get_embed( "added-student-failure-reply",
+                                    reply_to=msg,
+                                    mention = msg.author.mention
+                                   )
+            await embed.send( msg.guild, msg.channel )
+
+            # auto send failure to designated channel
+            embed = self.get_embed( "added-student-failure",
+                                            # reply_to=msg,
+                                            integration_id=msg.content,
+                                            mention = msg.author.mention
+                                        )
+        # delete student message 
+        await msg.delete()
+
+        # delete messages 
+        if added:
+            await self.delete_embeds_in( msg.channel, text=f"<@{msg.author.id}>" )
+
+        # return embed
+        return embed
     '''
 
     PRIVATE FUNCTIONS
@@ -384,7 +540,6 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
 
                 # assign for embed
                 lab_section = section
-
         return self.get_embed( "added-student-success", 
                               name=name,
                               integration_id=integration_id,
@@ -492,12 +647,11 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         self.prefix     = prefix    # str
         self.token      = TOKEN     # str | TODO: make this environmental variable
         self.dbg        = cfg.dbg   # bool
-        self.reset_db   = cfg.reset_db
+        self.staff_roles = cfg.staff_roles # string of roles
+        self.reset_db   = cfg.reset_db     # bool; resets the db on start
 
         # initialize additional file variables
         self.invite_link = sc.invite_link # str
-        self.admin_list = cfg.admin_list  # list of ints (discord IDs)
-        self.staff_list = cfg.staff_list  # list of ints (discord IDs)
         self.owner      = cfg.owner       # int (discord ID)
         self.student_role_str    = cfg.student_role # str
 
@@ -512,7 +666,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         # validation stuff
         self.required_roles    = [
             self.student_role_str
-        ]
+        ] + self.staff_roles
 
         self.required_channels = [
             self.welcome_channel_str,            # channel to welcome new students
@@ -535,6 +689,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         # initialize all available commands for users to call
         self.commands = {   self.prefix + "help": ( self.help, # command to run
                                                     "List of commands", # help desc
+                                                    f"{self.prefix}help", # example usage
                                                     False, # is admin-only command
                             ),
                             # ),
@@ -546,21 +701,31 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                             self.prefix + "prune":(
                                                 self.prune,
                                                 "Force bot to leave all inactive discords. NOTE: NOT IMPLEMENTED BUT SUPER EASY",
+                                                f"{self.prefix}prune", # example usage
                                                 True
                             ),
-                            self.prefix + "process":(
+                            self.prefix + "clear":(
+                                                self.clear_channel,
+                                                f"Clear all messages in a given channel except for pinned messages. Usage: {prefix}.clear <#channel>",
+                                                f"{self.prefix}clear <#channel-name>", # example usage
+                                                True
+                            ),
+                            self.prefix + "welcome":(
                                                 self.manual_welcome,
                                                 "Manually process every student in the #welcome channel. NOTE: Weird bug happening here",
+                                                f"{self.prefix}welcome", # example usage
                                                 True
                             ),
                             self.prefix + "update":(
                                                 self.update_database,
                                                 "Force-updates the database.",
+                                                f"{self.prefix}update", # example usage
                                                 True
                             ),
                             self.prefix + "set_api_key":(
                                                 self.handle_api_set,
-                                                "Reset the Canvas API key",
+                                                "Reset the Canvas API key. Deletes immediately when called.",
+                                                f"{self.prefix}set_api_key <api key>", # example usage
                                                 True
                             ),
                             # self.prefix + "update_lab":(
@@ -571,14 +736,10 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                             self.prefix + "lookup":(
                                                 self.lookup,
                                                 "View a student's current profile",
+                                                f"{self.prefix}lookup <student-id>", # example usage
                                                 True
                             )
 
 
                         }
-
-    def _is_staff(self, author):
-        return author.id in self.staff_list
     
-    def _is_admin(self, author):
-        return author.id in self.admin_list

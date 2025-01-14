@@ -19,6 +19,13 @@ def find_course_name_by_id( course_list, course_id):
             return course['name']
     return None
 
+def get_discord_id( text ):
+    id = None
+    match = re.search(r"<@(\d+)>", text) 
+
+    if match:
+        id = match.group(1)  # The first captured group
+    return id
 def get_classcode(name):
     # Extracts the class code and formats it with a hyphen (e.g., "CS-126")
     match = re.search(r"\b([A-Z]{2,})(\d{3})\b", name)
@@ -72,6 +79,7 @@ def get_current_semester_string():
 
     season_year_str = f"{current_season} {current_date.year}"
     return season_year_str
+    
 
 def is_lab( text ):
 

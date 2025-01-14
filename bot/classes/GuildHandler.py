@@ -1,6 +1,9 @@
+import time
 import discord
 from discord.utils import get
 from classes.CourseHandler import NAUCourse
+
+SLEEP = 0.6
 
 # Overarching guild class
 class GuildHandler():
@@ -10,7 +13,7 @@ class GuildHandler():
 
         def __init__(self, guild: discord.Guild, required_channels, required_roles):
 
-            # initialize semester 
+            # initxfialize semester 
             self.main_course = NAUCourse( guild.name )
             # self.main_course.display()
 
@@ -29,26 +32,103 @@ class GuildHandler():
             ==================
             ''')
             self.main_course.display() 
+
+        async def delete_message( self, msg, delete_pinned=False ):
+
+            # Check the pinned condition
+            if msg.pinned and not delete_pinned:
+
+                # return false
+                return False 
             
+            # otherwise, delete the message
+            await msg.delete()
+
+            # return true
+            return True
+            
+        async def get_admins( self, ids=False ):
+            admins = []
+
+            # Async iterate over the members
+            async for member in self.guild.fetch_members():
+                if member.guild_permissions.administrator:
+                    if ids:
+                        admins.append(member.id)
+                    else:
+                        admins.append(member)
+
+            return admins
 
         def get_channel_obj(self, channel_name):
             """Get a channel object by name."""
             return get(self.guild.channels, name=channel_name)
         
+        def get_channel_obj_by_id( self, channel_id ):
+            return get(self.guild.channels, id=channel_id)
+
         def get_member_by_nick( self, nickname ):
             found_member = None
-
-            print( self.guild.members )
 
             for member in self.guild.members:
                 if member.display_name == nickname:
                     found_member = member
                     break
             return found_member
+        
+        def get_members_with_role( self, text, ids=False ):
+
+            members = []
+            role = self.get_role_obj( text )
+
+            if role != None:
+
+                for member in self.guild.members:
+
+                    if role in member.roles:
+                        
+                        if ids:
+                            members.append( member.id )
+                        else:
+                            members.append( member )
+
+            return members
 
         def get_role_obj(self, role_name):
             """Get a role object by name."""
             return get(self.guild.roles, name=role_name)
+        
+        def has_role( self, member, role_name):
+
+            for role in member.roles:
+                if role.name.lower() == role_name.lower():
+                    return True
+    
+            return False
+
+        async def purge_channel( self, channel:discord.channel, delete_pinned=False):
+            '''
+            Deletes channel messages in a channel object
+            '''
+
+            # intialize variables
+            count = 0
+
+            # loop through msg history
+            async for msg in channel.history( limit = None ):
+                
+                # try to delete
+                deleted = await self.delete_message( msg, delete_pinned )
+            
+                # see if deleted
+                if deleted:
+
+                    # increase count
+                    count += 1
+
+                time.sleep( SLEEP )
+            # return count
+            return count
 
         def validate_channel(self, channel_name):
             """Check if a channel exists in the guild."""
@@ -90,10 +170,14 @@ class GuildHandler():
 
             return all_valid
 
-        def validate_guild(self):
+        def validate(self, verbose ):
             """Validate the guild setup."""
-            channels_valid = self.validate_channels(verbose=False)
-            roles_valid = self.validate_roles(verbose=False)
+            channels_valid = self.validate_channels( verbose=verbose)
+            roles_valid = self.validate_roles( verbose=verbose)
+
+            if not (channels_valid and roles_valid) and ( verbose ):
+
+                print(f"Could not validate {self.guild.name}!")
             return channels_valid and roles_valid
 
         def is_active( self ):
@@ -105,22 +189,32 @@ class GuildHandler():
         self.required_channels = required_channels or []
         self.required_roles = required_roles or []
 
-    def add_custom_guild( self, custom_guild ):
-
-        # Add in valid guild
-        if custom_guild.validate_guild():
-            self.custom_guilds.append( custom_guild )
-            return True
+    def add_custom_guild( self, custom_guild, verbose=False, verify=False ):
         
-        return False
+        # verify controls
+        if verify:
 
-    def add_discord_guild( self, guild:discord.Guild):
+            # check to verify
+            if custom_guild.validate( verbose ):
+                self.custom_guilds.append( custom_guild )
+                return True
+            
+            # couldn't verify the server
+            return False
+
+        # no verify, so just add it 
+        self.custom_guilds.append( custom_guild )
+
+        # added the guild
+        return True
+
+    def add_discord_guild( self, guild:discord.Guild, verbose=False):
 
         # create guild
         new_guild = self.create_guild( guild )
 
         # Add in valid guild
-        if new_guild.validate_guild():
+        if new_guild.validate( verbose ):
             self.custom_guilds.append( guild )
             return True
         
@@ -146,8 +240,7 @@ class GuildHandler():
                 active_guilds.append( custom_guild )
 
         return active_guilds
-
-
+    
     def get_custom_guild( self, guild:discord.Guild ):
         
         # loop through our guilds
@@ -161,14 +254,35 @@ class GuildHandler():
             
         # No guild found 
         return None
+    
+    async def get_member_by_msg( self, msg ):
+        return await self.get_member_by_author( msg.author )
+
+    async def get_member_by_author( self, author ):
+        return await author.guild.fetch_member( author.id )
             
-    def initialize_guilds( self, client ):
+    async def is_admin( self, author ):
 
-         # initialize variables
-        guilds = client.guilds
+        guild = self.get_custom_guild( author.guild )
+        admin_ids = await guild.get_admins( ids=True )
 
-        # loop through guilds
-        for guild in guilds:
+        return author.id in admin_ids
 
-            # add custom guild object
-            self.add_guild( guild )
+    async def is_staff( self, author ):
+
+        # get guild
+        guild = self.get_custom_guild( author.guild )
+        member = await self.get_member_by_author( author )
+
+        # loop through staff roles
+        for rolename in self.staff_roles:
+
+            # get role obj
+            role = guild.get_role_obj( rolename )
+
+            # check if role is in member roles
+            if role in member.roles:
+                return True
+            
+        # member is not staff
+        return False

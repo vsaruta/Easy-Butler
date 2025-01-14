@@ -82,6 +82,22 @@
         "footer": ""
     },
 
+    "clear-failure":{
+        "title": "Clear Failure",
+        "description":"Unable to delete messages in {channel_name}: {channel_name} does not exist.",
+        "color": "FAILURE",
+        "channel": "",
+        "footer": ""
+    },
+
+    "clear-success":{
+        "title": "Cleared Messages",
+        "description":"Successfully deleted {deleted} messages in {channel_name}",
+        "color": "SUCCESS",
+        "channel": "",
+        "footer": ""
+    },
+
     "help":{
         "title": "Help from lunaBot!",
         "description": "{desc}",
@@ -132,6 +148,13 @@
     "lookup-student-failure":{
         "title": "Student Not Found",
         "description": "Sorry, no student was found in the database with this ID.",
+        "color": "FAILURE",
+        "channel": "",
+        "footer": ""
+    },
+    "too-few-args-clear":{
+        "title": "Too Few Arguments",
+        "description": "This command is invalid. Please provide the channel to clear as a second parameter. Usage: luna.clear <#channel>",
         "color": "FAILURE",
         "channel": "",
         "footer": ""

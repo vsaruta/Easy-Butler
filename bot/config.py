@@ -1,11 +1,10 @@
 # define some common ids
 claire=343857226982883339
-vova=255168023751688193
 owner=claire
 
 # debug status
 dbg = True 
-reset_db = True
+reset_db = False
 
 #json file - for discord embed formatting
 json_file = "json/embeds.json"
@@ -29,12 +28,16 @@ dft_color     = 0x6495ED # hex
 success_color = 0x21D375 # hex
 error_color   = 0xF95C52 # hex
 
-# lists
-admin_list=[owner,vova]
-staff_list=admin_list + []
-
 # how often the bot updates (in hours)
 HOURS_UPDATE = 12
+
+# roles which we consider to be staff
+staff_roles = [ 
+                "Instructor",
+                "Supplementary Instructor",
+                "TA", 
+                "Lab Instructor"
+                ]
 
 '''
 # old config stuff
