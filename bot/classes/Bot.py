@@ -742,13 +742,13 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                             # ),
                             self.prefix + "clear":(
                                                 self.clear_channel,
-                                                f"Clear all messages in a given channel except for pinned messages. Usage: {prefix}.clear <#channel>",
+                                                f"Clear all messages in a given channel except for pinned messages.",
                                                 f"{self.prefix}clear <#channel-name>", # example usage
                                                 True
                             ),
                             self.prefix + "welcome":(
                                                 self.manual_welcome,
-                                                "Manually process every student in the #welcome channel. NOTE: Weird bug happening here",
+                                                "Manually process every student in the #welcome channel.",
                                                 f"{self.prefix}welcome", # example usage
                                                 True
                             ),
