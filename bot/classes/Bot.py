@@ -512,9 +512,10 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         else:
             
             # reply to student
-            embed = self.get_embed( "added-student-failure-reply",
+            embed = self.get_embed( "invalid-integration-id",
                                     reply_to=msg,
-                                    mention = msg.author.mention
+                                    mention = msg.author.mention,
+                                    integration_id=integration_id
                                    )
             await embed.send( msg.guild, msg.channel )
 

@@ -52,14 +52,6 @@
         "footer": ""
     },
 
-    "added-student-failure-reply":{
-        "title": "Unknown User ID",
-        "description": "Sorry {mention}, I could not find any student enrolled under this ID. Please enter the school ID found in your NAU email.",
-        "color": "FAILURE",
-        "channel": "",
-        "footer": ""
-    },
-
     "added-student-success":{
         "title": "Added New Student",
         "description":"**Name**: {name}\n**School ID**: {integration_id}\n**Lab Section:** {lab_section}\n**Discord User**: {mention}",
@@ -118,10 +110,10 @@
 
     "invalid-integration-id":{
         "title": "School ID Not Found",
-        "description": "Sorry {mention}, we could not find a student enrolled under the id {integration_id}. Please try again.",
+        "description": "Sorry {mention}, we could not find a student enrolled under the id **{integration_id}**.\n\n✎ Join our Discord server by typing your alphanumerical NAU ID, like vvs28 (which comes from Vova's NAU gmail- vvs28@nau.edu).",
         "color": "FAILURE",
-        "channel": "welcome",
-        "footer": ""
+        "channel": "",
+        "footer": "If you are a TA, please message Vova directly!"
     },
 
     "key-failure":{
@@ -175,7 +167,7 @@
 
     "process-students-success":{
         "title": "Success",
-        "description": "Welcomed {added} new students.",
+        "description": "Processed {added} student messages.",
         "color": "SUCCESS",
         "channel": "",
         "footer": ""
