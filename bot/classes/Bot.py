@@ -50,10 +50,6 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
             embed = self.get_embed("invalid-command", 
                                             reply_to=msg,
                                             prefix = self.prefix)
-            # embed.title = "Invalid Command"
-            # embed.description = "Command not recognized."
-            # embed.set_footer( text=f"(!) Commands can be found with {self.prefix}help")
-
         return embed
     
     '''
@@ -215,24 +211,17 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
             sis_id = records[0].sis_id
             pronouns = records[0].pronouns
 
-            # get discord member
-            member = guild.get_member_by_nick( name ) 
+            member = guild.get_member_by_nick( name )
 
             # create desc
             desc += f'''
             **Student Info**
             ⋅ Name: {name}
+            ⋅ Discord User: {member.mention if member != None else "Not Found"}
+            ⋅ Pronouns: {pronouns}
             ⋅ SIS ID: {sis_id}
             ⋅ School ID: {args[1]}
-            ⋅ Pronouns: {pronouns}'''
-
-            # if member != None:
-            #     desc += f'''
-            #     ⋅ Discord User: {member.mention}
-            #     '''
-
-            desc += '''
-
+            
             ** Enrollments **
             '''
 
@@ -543,6 +532,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
         # initialize variables
         name = records[0].name
         integration_id = records[0].id
+        sis_id = records[0].sis_id
         lab_section = None
 
         # get role object
@@ -580,6 +570,7 @@ class Bot( EmbedHandler, CanvasHandler, DatabaseHandler, GuildHandler ):
                               name=name,
                               integration_id=integration_id,
                               lab_section=lab_section,
+                              sis_id=sis_id,
                               mention=member.mention
                               )
     def _update_database( self, ):

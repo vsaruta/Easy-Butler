@@ -54,7 +54,7 @@
 
     "added-student-success":{
         "title": "Added New Student",
-        "description":"**Name**: {name}\n**School ID**: {integration_id}\n**Lab Section:** {lab_section}\n**Discord User**: {mention}",
+        "description":"**Name**: {name}\n**School ID**: {integration_id}\n**SIS ID:** {sis_id}\n**Lab Section:** {lab_section}\n**Discord User**: {mention}\n\n",
         "color": "SUCCESS",
         "channel": "processed-students",
         "footer": ""
